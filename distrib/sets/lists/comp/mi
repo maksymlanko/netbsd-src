@@ -5105,6 +5105,7 @@
 ./usr/share/man/cat2/unlink.0			comp-c-catman		.cat
 ./usr/share/man/cat2/unlinkat.0			comp-c-catman		.cat
 ./usr/share/man/cat2/unmount.0			comp-c-catman		.cat
+./usr/share/man/cat2/unshare.0			comp-c-catman		.cat
 ./usr/share/man/cat2/utimens.0			comp-c-catman		.cat
 ./usr/share/man/cat2/utimensat.0		comp-c-catman		.cat
 ./usr/share/man/cat2/utimes.0			comp-c-catman		.cat
@@ -13704,6 +13705,7 @@
 ./usr/share/man/html2/unlink.html		comp-c-htmlman		html
 ./usr/share/man/html2/unlinkat.html		comp-c-htmlman		html
 ./usr/share/man/html2/unmount.html		comp-c-htmlman		html
+./usr/share/man/html2/unshare.html		comp-c-htmlman		html
 ./usr/share/man/html2/utimens.html		comp-c-htmlman		html
 ./usr/share/man/html2/utimensat.html		comp-c-htmlman		html
 ./usr/share/man/html2/utimes.html		comp-c-htmlman		html
@@ -22148,6 +22150,7 @@
 ./usr/share/man/man2/unlink.2			comp-c-man		.man
 ./usr/share/man/man2/unlinkat.2			comp-c-man		.man
 ./usr/share/man/man2/unmount.2			comp-c-man		.man
+./usr/share/man/man2/unshare.2			comp-c-man		.man
 ./usr/share/man/man2/utimens.2			comp-c-man		.man
 ./usr/share/man/man2/utimensat.2		comp-c-man		.man
 ./usr/share/man/man2/utimes.2			comp-c-man		.man
