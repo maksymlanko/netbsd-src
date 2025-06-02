@@ -47,6 +47,7 @@
 
 #ifdef _KERNEL_OPT
 #include "opt_modular.h"
+#include "opt_ns.h"
 #include "opt_ntp.h"
 #include "opt_sysv.h"
 #endif
@@ -1068,3 +1069,8 @@
 506	STD MODULAR sysv_ipc { int|sys||semtimedop(int semid, \
 			    struct sembuf *sops, size_t nsops, \
 			    struct timespec *timeout); }
+#if defined(NS) || !defined(_KERNEL_OPT)
+507	STD		{ int|sys||unshare(int flags); }
+#else
+507	EXCL		unshare
+#endif

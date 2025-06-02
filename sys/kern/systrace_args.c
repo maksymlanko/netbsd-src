@@ -1,4 +1,4 @@
-/* $NetBSD: systrace_args.c,v 1.56 2024/10/09 16:29:11 christos Exp $ */
+/* $NetBSD$ */
 
 /*
  * System call argument to DTrace register array conversion.
@@ -3954,6 +3954,16 @@ systrace_args(register_t sysnum, const void *params, uintptr_t *uarg, size_t *n_
 		*n_args = 4;
 		break;
 	}
+#if defined(NS) || !defined(_KERNEL_OPT)
+	/* sys_unshare */
+	case 507: {
+		const struct sys_unshare_args *p = params;
+		iarg[0] = SCARG(p, flags); /* int */
+		*n_args = 1;
+		break;
+	}
+#else
+#endif
 	default:
 		*n_args = 0;
 		break;
@@ -10683,6 +10693,19 @@ systrace_entry_setargdesc(int sysnum, int ndx, char *desc, size_t descsz)
 			break;
 		};
 		break;
+#if defined(NS) || !defined(_KERNEL_OPT)
+	/* sys_unshare */
+	case 507:
+		switch(ndx) {
+		case 0:
+			p = "int";
+			break;
+		default:
+			break;
+		};
+		break;
+#else
+#endif
 	default:
 		break;
 	};
@@ -12920,6 +12943,14 @@ systrace_return_setargdesc(int sysnum, int ndx, char *desc, size_t descsz)
 		if (ndx == 0 || ndx == 1)
 			p = "int";
 		break;
+#if defined(NS) || !defined(_KERNEL_OPT)
+	/* sys_unshare */
+	case 507:
+		if (ndx == 0 || ndx == 1)
+			p = "int";
+		break;
+#else
+#endif
 	default:
 		break;
 	};
