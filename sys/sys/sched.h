@@ -205,6 +205,18 @@ struct schedstate_percpu {
 						   child */
 #define	CLONE_VFORK		0x00004000	/* parent blocks until child
 						   exits */
+#define CLONE_NEWNS		0x00020000	/* new mount namespace group */
+#define CLONE_NEWCGROUP		0x02000000	/* new cgroup namespace */
+#define CLONE_NEWUTS		0x04000000	/* new utsname namespace */
+#define CLONE_NEWIPC		0x08000000	/* new ipc namespace */
+#define CLONE_NEWUSER		0x10000000	/* new user  namespace */
+#define CLONE_NEWPID		0x20000000	/* new pid namespace */
+#define CLONE_NEWNET		0x40000000	/* new network namespace */
+#ifdef _KERNEL
+/* Mask for valid CLONE_NEW* namspace flags. */
+#define CLONE_NSMASK		(CLONE_NEWNS|CLONE_NEWCGROUP|CLONE_NEWUTS| \
+	    CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET)
+#endif /* _KERNEL */
 
 #endif /* _NETBSD_SOURCE */
 
