@@ -10,7 +10,7 @@ TESTS_SUBDIRS=	awk basename bzip2 cc cmp compress config cpio col cut \
 		infocmp jot ld locale m4 make mixerctl mkdep mtree nbperf \
 		netpgpverify patch pkill pr printf pwhash realpath rump_server \
 		shmif_dumpbus shmif_pcapin sdiff sed sort stat tar tmux tr \
-		unifdef uniq vmstat xlint ztest
+		unifdef uniq unshare vmstat xlint ztest
 
 .if ${MKCXX} != "no"
 TESTS_SUBDIRS+=	c++
