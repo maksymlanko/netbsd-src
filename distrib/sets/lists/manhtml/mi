@@ -631,6 +631,7 @@
 ./usr/share/man/html1/unlzf.html		man-util-htmlman	html
 ./usr/share/man/html1/unlzma.html		man-util-htmlman	html
 ./usr/share/man/html1/unpigz.html		man-util-htmlman	html
+./usr/share/man/html1/unshare.html		man-util-htmlman	html
 ./usr/share/man/html1/unvis.html		man-util-htmlman	html
 ./usr/share/man/html1/unxz.html			man-util-htmlman	html
 ./usr/share/man/html1/unzip.html		man-util-htmlman	html

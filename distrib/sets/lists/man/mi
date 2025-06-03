@@ -690,6 +690,7 @@
 ./usr/share/man/cat1/unlzf.0			man-util-catman		.cat
 ./usr/share/man/cat1/unlzma.0			man-util-catman		.cat
 ./usr/share/man/cat1/unpigz.0			man-util-catman		.cat
+./usr/share/man/cat1/unshare.0			man-util-catman		.cat
 ./usr/share/man/cat1/unvis.0			man-util-catman		.cat
 ./usr/share/man/cat1/unxz.0			man-util-catman		.cat
 ./usr/share/man/cat1/unzip.0			man-util-catman		.cat
@@ -4274,6 +4275,7 @@
 ./usr/share/man/man1/unlzf.1			man-util-man		.man
 ./usr/share/man/man1/unlzma.1			man-util-man		.man
 ./usr/share/man/man1/unpigz.1			man-util-man		.man
+./usr/share/man/man1/unshare.1			man-util-man		.man
 ./usr/share/man/man1/unvis.1			man-util-man		.man
 ./usr/share/man/man1/unxz.1			man-util-man		.man
 ./usr/share/man/man1/unzip.1			man-util-man		.man
