@@ -6650,6 +6650,10 @@
 ./usr/tests/usr.bin/uniq/d_show_duplicates.out		tests-usr.bin-tests	compattestfile,atf
 ./usr/tests/usr.bin/uniq/d_show_uniques.out		tests-usr.bin-tests	compattestfile,atf
 ./usr/tests/usr.bin/uniq/t_uniq				tests-usr.bin-tests	compattestfile,atf
+./usr/tests/usr.bin/unshare				tests-usr.bin-tests	compattestfile,atf
+./usr/tests/usr.bin/unshare/Atffile			tests-usr.bin-tests	compattestfile,atf
+./usr/tests/usr.bin/unshare/Kyuafile			tests-usr.bin-tests	compattestfile,atf,kyua
+./usr/tests/usr.bin/unshare/t_unshare			tests-usr.bin-tests	compattestfile,atf
 ./usr/tests/usr.bin/vmstat				tests-usr.bin-tests	compattestfile,atf
 ./usr/tests/usr.bin/vmstat/Atffile			tests-usr.bin-tests	compattestfile,atf
 ./usr/tests/usr.bin/vmstat/Kyuafile			tests-usr.bin-tests	compattestfile,atf,kyua
