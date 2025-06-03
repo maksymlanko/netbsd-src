@@ -1,0 +1,100 @@
+.\"	$NetBSD$
+.\"
+.\" Copyright (c) 2025 The NetBSD Foundation, Inc.
+.\" All rights reserved.
+.\"
+.\" This code is derived from software contributed to The NetBSD Foundation
+.\" by Christoph Badura.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+.\" ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+.\" TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+.\" PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+.\" BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+.\" CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+.\" SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+.\" INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+.\" CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd June 3, 2025
+.Dt UNSHARE 1
+.Os
+.Sh NAME
+.Nm unshare
+.Nd run a program in new namespaces
+.Sh SYNOPSIS
+.Nm
+.Op Fl hV
+.Op Fl u | -uts Oo = Pa file Oc
+.Op Ar program Op Ar args ...
+.Sh DESCRIPTION
+The
+.Nm
+utility creates new namespaces, as specified by the options, and then
+executes the specified program.  If
+.Ar program
+is not given, then the progrem specified in the environment variable
+.Ev SHELL
+(default
+.Pa /bin/sh )
+is run.
+.Pp
+The following options are available:
+.Bl -tag -width indent
+.It Fl h
+Display the help message and exit.
+.It Fl V
+Display the program version and exit.
+.\" XXX formatting
+.It Fl u , -uts Oo = Pa file Oc
+Create a new UTS namespace.
+If
+.Pa file
+is specified, the namespace is made persistent by creating a bind mount at
+.Pa file .
+Specifying
+.Pa file
+currently has no effect on
+.Nx .
+.Ss Namespaces
+The following types of namspaces can be created with
+.Nm :
+.Bl -ohang
+.It "UTS namespace"
+.\"XXX more precise phrasing
+Setting hostname or domainname will only affect the rest of the system.
+.El
+.Sh ENVIRONMENT
+The following variable is referenced by
+.Nm :
+.Bl -hang
+.It SHELL
+If set, the string specified by
+.Ev SHELL
+is interpreted as the name of the shell to exec.
+If the variable
+.Ev SHELL
+is not set,
+.Pa /bin/sh
+is used.
+.Sh EXIT STATUS
+.Ex -std
+.Sh SEE ALSO
+.Xr unshare 2 ,
+.Xr namespaces 7
+.Sh HISTORY
+The
+.Nm
+utility appeared in
+.Nx 11 .

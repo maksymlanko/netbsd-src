@@ -1378,6 +1378,7 @@
 ./usr/libdata/debug/usr/sbin/unbound-control.debug	base-netutil-debug	debug,unbound
 ./usr/libdata/debug/usr/sbin/unbound.debug	base-netutil-debug	debug,unbound
 ./usr/libdata/debug/usr/sbin/unlink.debug	comp-sysutil-debug	debug
+./usr/libdata/debug/usr/sbin/unshare.debug	comp-sysutil-debug	debug
 ./usr/libdata/debug/usr/sbin/usbdevs.debug	comp-sysutil-debug	debug
 ./usr/libdata/debug/usr/sbin/user.debug		comp-sysutil-debug	debug
 ./usr/libdata/debug/usr/sbin/uuchk.debug	comp-obsolete		obsolete,compatfile
