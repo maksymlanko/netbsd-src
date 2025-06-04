@@ -44,11 +44,15 @@
 
 /* Global variables for the kernel. */
 
+#ifdef _SYS_UTS_NS_H_
 extern long hostid;
 extern char hostname[MAXHOSTNAMELEN];
 extern int hostnamelen;
 extern char domainname[MAXHOSTNAMELEN];
 extern int domainnamelen;
+#else
+extern struct uts_ns new_ns;
+#endif /* _SYS_UTS_NS_H_ */
 
 extern int rtc_offset;		/* offset of rtc from UTC in minutes */
 

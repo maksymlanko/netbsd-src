@@ -68,6 +68,8 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl.c,v 1.228 2023/09/09 16:01:09 christos E
 #include <sys/unistd.h>
 #include <sys/vnode_impl.h>     /* For vfs_drainvnodes(). */
 
+#include <sys/uts.h> // TODO: make ifdef
+
 int security_setidcore_dump;
 char security_setidcore_path[MAXPATHLEN] = "/var/crash/%n.core";
 uid_t security_setidcore_owner = 0;
@@ -894,14 +896,14 @@ sysctl_kern_hostid(SYSCTLFN_ARGS)
 	int error, inthostid;
 	struct sysctlnode node;
 
-	inthostid = hostid;  /* XXX assumes sizeof int <= sizeof long */
+	inthostid = new_ns.hostid;  /* XXX assumes sizeof int <= sizeof long */
 	node = *rnode;
 	node.sysctl_data = &inthostid;
 	error = sysctl_lookup(SYSCTLFN_CALL(&node));
 	if (error || newp == NULL)
 		return (error);
 
-	hostid = (unsigned)inthostid;
+	new_ns.hostid = (unsigned)inthostid;
 
 	return (0);
 }

@@ -72,6 +72,8 @@ __KERNEL_RCSID(0, "$NetBSD: linux32_utsname.c,v 1.10 2019/08/23 06:47:58 maxv Ex
 #include <compat/linux32/common/linux32_socketcall.h>
 #include <compat/linux32/linux32_syscallargs.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 int
 linux32_sys_uname(struct lwp *l, const struct linux32_sys_uname_args *uap, register_t *retval)
 {
@@ -83,11 +85,11 @@ linux32_sys_uname(struct lwp *l, const struct linux32_sys_uname_args *uap, regis
 
 	memset(&luts, 0, sizeof(luts));
 	strlcpy(luts.l_sysname, linux32_sysname, sizeof(luts.l_sysname));
-	strlcpy(luts.l_nodename, hostname, sizeof(luts.l_nodename));
+	strlcpy(luts.l_nodename, new_ns.hostname, sizeof(luts.l_nodename));
 	strlcpy(luts.l_release, linux32_release, sizeof(luts.l_release));
 	strlcpy(luts.l_version, linux32_version, sizeof(luts.l_version));
 	strlcpy(luts.l_machine, LINUX_UNAME_ARCH, sizeof(luts.l_machine));
-	strlcpy(luts.l_domainname, domainname, sizeof(luts.l_domainname));
+	strlcpy(luts.l_domainname, new_ns.domainname, sizeof(luts.l_domainname));
        
 	lp = SCARG_P32(uap, up);
 
@@ -104,7 +106,7 @@ linux32_sys_olduname(struct lwp *l, const struct linux32_sys_olduname_args *uap,
 
 	memset(&luts, 0, sizeof(luts));
 	strlcpy(luts.l_sysname, linux32_sysname, sizeof(luts.l_sysname));
-	strlcpy(luts.l_nodename, hostname, sizeof(luts.l_nodename));
+	strlcpy(luts.l_nodename, new_ns.hostname, sizeof(luts.l_nodename));
 	strlcpy(luts.l_release, linux32_release, sizeof(luts.l_release));
 	strlcpy(luts.l_version, linux32_version, sizeof(luts.l_version));
 	strlcpy(luts.l_machine, LINUX_UNAME_ARCH, sizeof(luts.l_machine));
@@ -122,7 +124,7 @@ linux32_sys_oldolduname(struct lwp *l, const struct linux32_sys_oldolduname_args
  
 	memset(&luts, 0, sizeof(luts));
         strlcpy(luts.l_sysname, linux32_sysname, sizeof(luts.l_sysname));
-        strlcpy(luts.l_nodename, hostname, sizeof(luts.l_nodename));
+        strlcpy(luts.l_nodename, new_ns.hostname, sizeof(luts.l_nodename));
         strlcpy(luts.l_release, linux32_release, sizeof(luts.l_release));
         strlcpy(luts.l_version, linux32_version, sizeof(luts.l_version));
         strlcpy(luts.l_machine, LINUX_UNAME_ARCH, sizeof(luts.l_machine));

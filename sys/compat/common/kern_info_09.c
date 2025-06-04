@@ -55,6 +55,8 @@ __KERNEL_RCSID(0, "$NetBSD: kern_info_09.c,v 1.22 2021/09/07 11:43:02 riastradh 
 
 #include <compat/common/compat_mod.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 static struct syscall_package kern_info_09_syscalls[] = {
 	{ SYS_compat_09_ogetdomainname, 0,
 	    (sy_call_t *)compat_09_sys_getdomainname },
@@ -122,7 +124,7 @@ compat_09_sys_uname(struct lwp *l,
 
 	memset(&outsname, 0, sizeof(outsname));
 	strncpy(outsname.sysname, ostype, sizeof(outsname.sysname));
-	strncpy(outsname.nodename, hostname, sizeof(outsname.nodename));
+	strncpy(outsname.nodename, new_ns.hostname, sizeof(outsname.nodename));
 	strncpy(outsname.release, osrelease, sizeof(outsname.release));
 	dp = outsname.version;
 	ep = &outsname.version[sizeof(outsname.version) - 1];

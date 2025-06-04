@@ -65,6 +65,8 @@ __KERNEL_RCSID(0, "$NetBSD: vfs_lookup.c,v 1.238 2024/12/07 02:27:38 riastradh E
 #include <sys/vnode.h>
 #include <sys/vnode_impl.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 #ifndef MAGICLINKS
 #define MAGICLINKS 0
 #endif
@@ -146,7 +148,7 @@ symlink_magic(struct proc *p, char *cp, size_t *len)
 			slen = VNL(MACHINE);
 			SUBSTITUTE("machine", MACHINE, slen);
 		} else if (MATCH("hostname")) {
-			SUBSTITUTE("hostname", hostname, hostnamelen);
+			SUBSTITUTE("hostname", new_ns.hostname, new_ns.hostnamelen);
 		} else if (MATCH("osrelease")) {
 			slen = strlen(osrelease);
 			SUBSTITUTE("osrelease", osrelease, slen);
@@ -157,7 +159,7 @@ symlink_magic(struct proc *p, char *cp, size_t *len)
 			slen = strlen(kernel_ident);
 			SUBSTITUTE("kernel_ident", kernel_ident, slen);
 		} else if (MATCH("domainname")) {
-			SUBSTITUTE("domainname", domainname, domainnamelen);
+			SUBSTITUTE("domainname", new_ns.domainname, new_ns.domainnamelen);
 		} else if (MATCH("ostype")) {
 			slen = strlen(ostype);
 			SUBSTITUTE("ostype", ostype, slen);

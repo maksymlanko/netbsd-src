@@ -61,6 +61,8 @@ __KERNEL_RCSID(0, "$NetBSD: firewire.c,v 1.55 2022/05/22 11:27:35 andvar Exp $")
 
 #include "locators.h"
 
+#include <sys/uts.h> // TODO: make ifdef
+
 struct crom_src_buf {
 	struct crom_src	src;
 	struct crom_chunk root;
@@ -1454,7 +1456,7 @@ fw_reset_crom(struct firewire_comm *fc)
 	crom_add_entry(root, CSRKEY_VENDOR, CSRVAL_VENDOR_PRIVATE);
 	crom_add_simple_text(src, root, &buf->vendor, PROJECT_STR);
 	crom_add_entry(root, CSRKEY_HW, __NetBSD_Version__);
-	crom_add_simple_text(src, root, &buf->hw, hostname);
+	crom_add_simple_text(src, root, &buf->hw, new_ns.hostname);
 }
 
 /*

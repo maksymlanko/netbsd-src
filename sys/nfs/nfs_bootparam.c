@@ -71,6 +71,8 @@ __KERNEL_RCSID(0, "$NetBSD: nfs_bootparam.c,v 1.40 2024/07/05 04:31:54 rin Exp $
 #include <nfs/nfsdiskless.h>
 #include <nfs/nfs_var.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 /*
  * There are two implementations of NFS diskless boot.
  * This implementation uses Sun RPC/bootparams, and the
@@ -181,7 +183,7 @@ nfs_bootparam(struct nfs_diskless *nd, struct lwp *lwp, int *flags)
 	}
 	*flags |= NFS_BOOT_HAS_SERVADDR | NFS_BOOT_HAS_SERVER;
 	printf("nfs_boot: server_addr=%s\n", inet_ntoa(sin->sin_addr));
-	printf("nfs_boot: hostname=%s\n", hostname);
+	printf("nfs_boot: hostname=%s\n", new_ns.hostname);
 
 	/*
 	 * Now fetch the server:pathname strings and server IP
@@ -359,14 +361,14 @@ bp_whoami(struct sockaddr_in *bpsin, struct in_addr *my_ip,
 	bpsin->sin_addr.s_addr = sin->sin_addr.s_addr;
 
 	/* client name */
-	hostnamelen = MAXHOSTNAMELEN-1;
-	m = xdr_string_decode(m, hostname, &hostnamelen);
+	new_ns.hostnamelen = MAXHOSTNAMELEN-1;
+	m = xdr_string_decode(m, new_ns.hostname, &new_ns.hostnamelen);
 	if (m == NULL)
 		goto bad;
 
 	/* domain name */
-	domainnamelen = MAXHOSTNAMELEN-1;
-	m = xdr_string_decode(m, domainname, &domainnamelen);
+	new_ns.domainnamelen = MAXHOSTNAMELEN-1;
+	m = xdr_string_decode(m, new_ns.domainname, &new_ns.domainnamelen);
 	if (m == NULL)
 		goto bad;
 
@@ -412,7 +414,7 @@ bp_getfile(struct sockaddr_in *bpsin, const char *key,
 	 */
 
 	/* client name (hostname) */
-	m  = xdr_string_encode(hostname, hostnamelen);
+	m  = xdr_string_encode(new_ns.hostname, new_ns.hostnamelen);
 	if (m == NULL)
 		return (ENOMEM);
 

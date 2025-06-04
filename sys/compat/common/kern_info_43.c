@@ -67,6 +67,8 @@ __KERNEL_RCSID(0, "$NetBSD: kern_info_43.c,v 1.40 2021/09/07 11:43:02 riastradh 
 
 #include <compat/common/compat_mod.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 static struct syscall_package kern_info_43_syscalls[] = {
 	{ SYS_compat_43_ogetdtablesize, 0,
 	    (sy_call_t *)compat_43_sys_getdtablesize },
@@ -98,7 +100,7 @@ int
 compat_43_sys_gethostid(struct lwp *l, const void *v, register_t *retval)
 {
 
-	*(int32_t *)retval = hostid;
+	*(int32_t *)retval = new_ns.hostid;
 	return (0);
 }
 
@@ -258,7 +260,7 @@ compat_43_sys_getkerninfo(struct lwp *l, const struct compat_43_sys_getkerninfo_
 				size = sizeof(ksi) +
 				    strlen(ostype) + strlen(cpu_model) +
 				    strlen(osrelease) + strlen(machine) +
-				    strlen(version) + strlen(hostname) + 6;
+				    strlen(version) + strlen(new_ns.hostname) + 6;
 				error = 0;
 				break;
 			}
@@ -295,7 +297,13 @@ compat_43_sys_getkerninfo(struct lwp *l, const struct compat_43_sys_getkerninfo_
 
 			getmicroboottime(&tv);
 			timeval_to_timeval50(&tv, &ksi.boottime);
-			COPY(hostname);
+			// TODO: make ifdef
+			// char* hostname_str = new_ns.hostname;
+			// COPY(hostname_str);
+			ksi.hostname = us - (u_long) usi;
+			if ((error = copyoutstr(new_ns.hostname, us, 1024, &len)) != 0)
+			    return error;
+			us += len;
 
 			size = (us - (char *) &usi[1]) + sizeof(ksi);
 

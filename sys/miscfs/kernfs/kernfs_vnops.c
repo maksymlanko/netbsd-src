@@ -63,6 +63,8 @@ __KERNEL_RCSID(0, "$NetBSD: kernfs_vnops.c,v 1.174 2022/03/27 17:10:56 christos 
 
 #include <uvm/uvm_extern.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 #define KSTRING	256		/* Largest I/O available via this filesystem */
 #define	UIO_MX 32
 
@@ -427,8 +429,8 @@ kernfs_xread(struct kernfs_node *kfs, int off, char **bufp, size_t len, size_t *
 	}
 
 	case KFShostname: {
-		char *cp = hostname;
-		size_t xlen = hostnamelen;
+		char *cp = new_ns.hostname;
+		size_t xlen = new_ns.hostnamelen;
 
 		if (xlen >= (len - 2))
 			return (EINVAL);
@@ -471,9 +473,9 @@ kernfs_xwrite(const struct kernfs_node *kfs, char *bf, size_t len)
 	case KFShostname:
 		if (bf[len-1] == '\n')
 			--len;
-		memcpy(hostname, bf, len);
-		hostname[len] = '\0';
-		hostnamelen = (size_t) len;
+		memcpy(new_ns.hostname, bf, len);
+		new_ns.hostname[len] = '\0';
+		new_ns.hostnamelen = (size_t) len;
 		return (0);
 
 	default:

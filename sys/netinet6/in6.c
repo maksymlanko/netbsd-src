@@ -108,6 +108,8 @@ __KERNEL_RCSID(0, "$NetBSD: in6.c,v 1.292 2024/03/01 23:50:27 riastradh Exp $");
 #include <compat/netinet6/in6_var.h>
 #include <compat/netinet6/nd6.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 MALLOC_DEFINE(M_IP6OPT, "ip6_options", "IPv6 options");
 
 /* enable backward compatibility code for obsoleted ioctls */
@@ -956,7 +958,7 @@ in6_join_mcastgroups(struct in6_aliasreq *ifra, struct in6_ifaddr *ia,
 		 */
 		dad_delay = cprng_fast32() % (MAX_RTR_SOLICITATION_DELAY * hz);
 	}
-	if (in6_nigroup(ifp, hostname, hostnamelen, &mltaddr) != 0)
+	if (in6_nigroup(ifp, new_ns.hostname, new_ns.hostnamelen, &mltaddr) != 0)
 		;
 	else if ((imm = in6_joingroup(ifp, &mltaddr.sin6_addr, &error,
 		  dad_delay)) == NULL) { /* XXX jinmei */

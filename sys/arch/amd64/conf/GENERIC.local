@@ -1,0 +1,4 @@
+ifndef xpci
+    vio9p*  at virtio?                      # Virtio 9P device
+endif
+options 	UTS_NS

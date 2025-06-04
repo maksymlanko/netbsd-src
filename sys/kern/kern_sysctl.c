@@ -158,6 +158,15 @@ kmutex_t sysctl_file_marker_lock;
 /*
  * Attributes stored in the kernel.
  */
+#ifdef _SYS_UTS_NS_H_
+#error BOOM! USING CUSTOM UTS
+struct uts_ns new_ns = {
+	.hostnamelen = 0,
+	.domainnamelen = 0,
+	.hostid = 0,
+};
+#else
+#error WHAT?? STILL USING OLD UTS
 char hostname[MAXHOSTNAMELEN];
 int hostnamelen;
 
@@ -165,8 +174,7 @@ char domainname[MAXHOSTNAMELEN];
 int domainnamelen;
 
 long hostid;
-
-struct uts_ns new_ns;
+#endif /* _SYS_UTS_NS_H_ */
 
 #ifndef DEFCORENAME
 #define	DEFCORENAME	"%n.core"

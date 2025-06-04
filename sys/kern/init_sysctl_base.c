@@ -40,6 +40,8 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #include <sys/kernel.h>
 #include <sys/disklabel.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 static int sysctl_setlen(SYSCTLFN_PROTO);
 
 /*
@@ -164,17 +166,18 @@ SYSCTL_SETUP(sysctl_kernbase_setup, "sysctl kern subtree base setup")
 		       SYSCTL_DESCR("Kernel version"),
 		       NULL, 0, __UNCONST(&version), 0,
 		       CTL_KERN, KERN_VERSION, CTL_EOL);
+// TODO: make ifdef for NOT using namespaces
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "hostname",
 		       SYSCTL_DESCR("System hostname"),
-		       sysctl_setlen, 0, hostname, MAXHOSTNAMELEN,
+		       sysctl_setlen, 0, new_ns.hostname, MAXHOSTNAMELEN,
 		       CTL_KERN, KERN_HOSTNAME, CTL_EOL);
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "domainname",
 		       SYSCTL_DESCR("YP domain name"),
-		       sysctl_setlen, 0, domainname, MAXHOSTNAMELEN,
+		       sysctl_setlen, 0, new_ns.domainname, MAXHOSTNAMELEN,
 		       CTL_KERN, KERN_DOMAINNAME, CTL_EOL);
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_IMMEDIATE,
@@ -285,10 +288,10 @@ sysctl_setlen(SYSCTLFN_ARGS)
 
 	switch (rnode->sysctl_num) {
 	case KERN_HOSTNAME:
-		hostnamelen = strlen((const char*)rnode->sysctl_data);
+		new_ns.hostnamelen = strlen((const char*)rnode->sysctl_data);
 		break;
 	case KERN_DOMAINNAME:
-		domainnamelen = strlen((const char*)rnode->sysctl_data);
+		new_ns.domainnamelen = strlen((const char*)rnode->sysctl_data);
 		break;
 	}
 

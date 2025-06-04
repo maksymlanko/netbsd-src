@@ -71,6 +71,8 @@
 #include <sys/pool.h>
 #include <sys/buf.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 char hw_serial[11] = "0";
 
 struct utsname utsname;
@@ -80,7 +82,7 @@ opensolaris_utsname_init(void *arg)
 {
 
 	strlcpy(utsname.sysname, ostype, sizeof(utsname.sysname));
-	strlcpy(utsname.nodename, hostname, sizeof(utsname.nodename));
+	strlcpy(utsname.nodename, new_ns.hostname, sizeof(utsname.nodename));
 	strlcpy(utsname.release, osrelease, sizeof(utsname.release));
 	strlcpy(utsname.version, version, sizeof(utsname.version));
 	strlcpy(utsname.machine, machine, sizeof(utsname.machine));

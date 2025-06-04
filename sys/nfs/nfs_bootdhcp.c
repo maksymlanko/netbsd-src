@@ -80,6 +80,8 @@ __KERNEL_RCSID(0, "$NetBSD: nfs_bootdhcp.c,v 1.60 2024/10/20 14:01:52 mlelstv Ex
 #include <nfs/nfsmount.h>
 #include <nfs/nfsdiskless.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 /*
  * There are two implementations of NFS diskless boot.
  * This implementation uses BOOTP (RFC951, RFC1048), and
@@ -754,18 +756,18 @@ bootp_extract(struct bootp *bootp, int replylen,
 			memcpy(&gateway, p, 4);
 			break;
 		    case TAG_HOST_NAME:
-			if (len >= sizeof(hostname)) {
+			if (len >= sizeof(new_ns.hostname)) {
 				printf("nfs_boot: host name >= %lu bytes\n",
-				       (u_long)sizeof(hostname));
+				       (u_long)sizeof(new_ns.hostname));
 				break;
 			}
 			myname = p;
 			mynamelen = len;
 			break;
 		    case TAG_DOMAIN_NAME:
-			if (len >= sizeof(domainname)) {
+			if (len >= sizeof(new_ns.domainname)) {
 				printf("nfs_boot: domain name >= %lu bytes\n",
-				       (u_long)sizeof(domainname));
+				       (u_long)sizeof(new_ns.domainname));
 				break;
 			}
 			mydomain = p;
@@ -820,15 +822,15 @@ bootp_extract(struct bootp *bootp, int replylen,
 	 */
 	if (myname) {
 		myname[mynamelen] = '\0';
-		strncpy(hostname, myname, sizeof(hostname));
-		hostnamelen = mynamelen;
-		printf("nfs_boot: my_name=%s\n", hostname);
+		strncpy(new_ns.hostname, myname, sizeof(new_ns.hostname));
+		new_ns.hostnamelen = mynamelen;
+		printf("nfs_boot: my_name=%s\n", new_ns.hostname);
 	}
 	if (mydomain) {
 		mydomain[mydomainlen] = '\0';
-		strncpy(domainname, mydomain, sizeof(domainname));
-		domainnamelen = mydomainlen;
-		printf("nfs_boot: my_domain=%s\n", domainname);
+		strncpy(new_ns.domainname, mydomain, sizeof(new_ns.domainname));
+		new_ns.domainnamelen = mydomainlen;
+		printf("nfs_boot: my_domain=%s\n", new_ns.domainname);
 	}
 	if (!(*flags & NFS_BOOT_HAS_MYIP)) {
 		nd->nd_myip = bootp->bp_yiaddr;

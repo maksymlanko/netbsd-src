@@ -58,6 +58,8 @@ __KERNEL_RCSID(0, "$NetBSD: cd9660_rrip.c,v 1.18 2015/03/28 19:24:05 maxv Exp $"
 #include <fs/cd9660/cd9660_rrip.h>
 #include <fs/cd9660/iso_rrip.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 typedef struct {
 	char type[2];
 	int (*func)(void *, ISO_RRIP_ANALYZE *);
@@ -176,8 +178,8 @@ cd9660_rrip_slink(void *v, ISO_RRIP_ANALYZE *ana)
 
 		case ISO_SUSP_CFLAG_HOST:
 			/* Inserting hostname i.e. "kurt.tools.de" */
-			inbuf = hostname;
-			wlen = hostnamelen;
+			inbuf = new_ns.hostname;
+			wlen = new_ns.hostnamelen;
 			break;
 
 		case ISO_SUSP_CFLAG_CONTINUE:
@@ -246,8 +248,8 @@ cd9660_rrip_altname(void *v, ISO_RRIP_ANALYZE *ana)
 
 	case ISO_SUSP_CFLAG_HOST:
 		/* Inserting hostname i.e. "kurt.tools.de" */
-		inbuf = hostname;
-		wlen = hostnamelen;
+		inbuf = new_ns.hostname;
+		wlen = new_ns.hostnamelen;
 		break;
 
 	case ISO_SUSP_CFLAG_CONTINUE:

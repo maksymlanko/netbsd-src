@@ -48,6 +48,8 @@
 #include <dev/vmt/vmtreg.h>
 #include <dev/vmt/vmtvar.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 /* #define VMT_DEBUG */
 
 static int vmt_sysctl_setup_root(device_t);
@@ -133,7 +135,8 @@ struct vmt_tclo_rpc {
 	{ NULL, NULL },
 };
 
-extern char hostname[MAXHOSTNAMELEN];
+//extern char hostname[MAXHOSTNAMELEN];
+extern struct uts_ns new_ns;
 
 static void
 vmt_probe_cmd(struct vm_backdoor *frame, uint16_t cmd)
@@ -423,8 +426,8 @@ vmt_update_guest_uptime(struct vmt_softc *sc)
 static void
 vmt_update_guest_info(struct vmt_softc *sc)
 {
-	if (strncmp(sc->sc_hostname, hostname, sizeof(sc->sc_hostname)) != 0) {
-		strlcpy(sc->sc_hostname, hostname, sizeof(sc->sc_hostname));
+	if (strncmp(sc->sc_hostname, new_ns.hostname, sizeof(sc->sc_hostname)) != 0) {
+		strlcpy(sc->sc_hostname, new_ns.hostname, sizeof(sc->sc_hostname));
 		if (vm_rpc_send_rpci_tx(sc, "SetGuestInfo  %d %s",
 		    VM_GUEST_INFO_DNS_NAME, sc->sc_hostname) != 0) {
 			device_printf(sc->sc_dev, "unable to set hostname\n");

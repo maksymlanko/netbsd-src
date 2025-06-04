@@ -76,6 +76,8 @@ __KERNEL_RCSID(0, "$NetBSD: ieee80211_ioctl.c,v 1.69 2021/09/21 15:00:34 christo
 
 #include <compat/sys/sockio.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 #ifdef __FreeBSD__
 #define	IS_UP(_ic) \
 	(((_ic)->ic_ifp->if_flags & IFF_UP) &&			\
@@ -221,10 +223,10 @@ ieee80211_cfgget(struct ieee80211com *ic, u_long cmd, void *data)
 		/* nothing appropriate */
 		break;
 	case WI_RID_NODENAME:
-		strlcpy((char *)&wreq->wi_val[1], hostname,
+		strlcpy((char *)&wreq->wi_val[1], new_ns.hostname,
 		    sizeof(wreq->wi_val) - sizeof(wreq->wi_val[0]));
-		wreq->wi_val[0] = htole16(strlen(hostname));
-		wreq->wi_len = (1 + strlen(hostname) + 1) / 2;
+		wreq->wi_val[0] = htole16(strlen(new_ns.hostname));
+		wreq->wi_len = (1 + strlen(new_ns.hostname) + 1) / 2;
 		break;
 	case WI_RID_CURRENT_SSID:
 		if (ic->ic_state != IEEE80211_S_RUN) {

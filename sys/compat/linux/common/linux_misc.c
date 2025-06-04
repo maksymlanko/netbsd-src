@@ -125,6 +125,8 @@ __KERNEL_RCSID(0, "$NetBSD: linux_misc.c,v 1.267 2024/10/01 16:41:29 riastradh E
 
 #include <compat/linux/linux_syscallargs.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 const int linux_ptrace_request_map[] = {
 	LINUX_PTRACE_TRACEME,	PT_TRACE_ME,
 	LINUX_PTRACE_PEEKTEXT,	PT_READ_I,
@@ -440,11 +442,11 @@ linux_sys_uname(struct lwp *l, const struct linux_sys_uname_args *uap, register_
 
 	memset(&luts, 0, sizeof(luts));
 	strlcpy(luts.l_sysname, linux_sysname, sizeof(luts.l_sysname));
-	strlcpy(luts.l_nodename, hostname, sizeof(luts.l_nodename));
+	strlcpy(luts.l_nodename, new_ns.hostname, sizeof(luts.l_nodename));
 	strlcpy(luts.l_release, linux_release, sizeof(luts.l_release));
 	strlcpy(luts.l_version, linux_version, sizeof(luts.l_version));
 	strlcpy(luts.l_machine, LINUX_UNAME_ARCH, sizeof(luts.l_machine));
-	strlcpy(luts.l_domainname, domainname, sizeof(luts.l_domainname));
+	strlcpy(luts.l_domainname, new_ns.domainname, sizeof(luts.l_domainname));
 
 	return copyout(&luts, SCARG(uap, up), sizeof(luts));
 }

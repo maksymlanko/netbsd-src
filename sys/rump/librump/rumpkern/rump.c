@@ -90,6 +90,8 @@ __KERNEL_RCSID(0, "$NetBSD: rump.c,v 1.361 2023/10/05 19:41:07 ad Exp $");
 #include <uvm/uvm_extern.h>
 #include <uvm/uvm_readahead.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 char machine[] = MACHINE;
 char machine_arch[] = MACHINE_ARCH;
 
@@ -455,12 +457,12 @@ rump_init_callback(void (*cpuinit_callback) (void))
 	module_init_class(MODULE_CLASS_ANY);
 
 	if (rumpuser_getparam(RUMPUSER_PARAM_HOSTNAME,
-	    hostname, MAXHOSTNAMELEN) != 0) {
+	    new_ns.hostname, MAXHOSTNAMELEN) != 0) {
 		panic(
 		    "%s: mandatory hypervisor configuration (HOSTNAME) missing",
 		    __func__);
 	}
-	hostnamelen = strlen(hostname);
+	new_ns.hostnamelen = strlen(new_ns.hostname);
 
 	sigemptyset(&sigcantmask);
 

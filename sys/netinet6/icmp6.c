@@ -105,6 +105,8 @@ __KERNEL_RCSID(0, "$NetBSD: icmp6.c,v 1.258 2024/07/05 04:31:54 rin Exp $");
 #include <netinet6/nd6.h>
 #include <netinet6/scope6_var.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 #ifdef IPSEC
 #include <netipsec/ipsec.h>
 #include <netipsec/ipsec6.h>
@@ -787,8 +789,8 @@ _icmp6_input(struct mbuf *m, int off, int proto)
 				m_free(n);
 				break;
 			}
-			if (maxhlen > hostnamelen)
-				maxhlen = hostnamelen;
+			if (maxhlen > new_ns.hostnamelen)
+				maxhlen = new_ns.hostnamelen;
 			/*
 			 * Copy IPv6 and ICMPv6 only.
 			 */
@@ -799,7 +801,7 @@ _icmp6_input(struct mbuf *m, int off, int proto)
 
 			p = (u_char *)(nicmp6 + 1);
 			memset(p, 0, 4);
-			memcpy(p + 4, hostname, maxhlen); /* meaningless TTL */
+			memcpy(p + 4, new_ns.hostname, maxhlen); /* meaningless TTL */
 
 			m_copy_pkthdr(n, m);
 			n->m_pkthdr.len = n->m_len = sizeof(struct ip6_hdr) +
@@ -1355,7 +1357,7 @@ ni6_input(struct mbuf *m, int off)
 			 *   wildcard match, if gethostname(3) side has
 			 *   truncated hostname.
 			 */
-			n = ni6_nametodns(hostname, hostnamelen, 0);
+			n = ni6_nametodns(new_ns.hostname, new_ns.hostnamelen, 0);
 			if (!n || n->m_next || n->m_len == 0)
 				goto bad;
 			IP6_EXTHDR_GET(subj, char *, m,
@@ -1479,7 +1481,7 @@ ni6_input(struct mbuf *m, int off)
 		/*
 		 * XXX do we really have FQDN in variable "hostname"?
 		 */
-		n->m_next = ni6_nametodns(hostname, hostnamelen, oldfqdn);
+		n->m_next = ni6_nametodns(new_ns.hostname, new_ns.hostnamelen, oldfqdn);
 		if (n->m_next == NULL)
 			goto bad;
 		/* XXX we assume that n->m_next is not a chain */

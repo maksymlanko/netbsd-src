@@ -59,6 +59,8 @@ __KERNEL_RCSID(0, "$NetBSD: in6_ifattach.c,v 1.122 2024/04/11 07:34:37 knakahara
 #include <netinet6/ip6_mroute.h>
 #include <netinet6/scope6_var.h>
 
+#include <sys/uts.h> // TODO: make ifdef
+
 int ip6_auto_linklocal = 1;	/* enable by default */
 
 #if 0
@@ -137,14 +139,14 @@ get_rand_ifid(struct in6_addr *in6)	/* upper 64bits are preserved */
 
 #if 0
 	/* we need at least several letters as seed for ifid */
-	if (hostnamelen < 3)
+	if (new_uts.hostnamelen < 3)
 		return -1;
 #endif
 
 	/* generate 8 bytes of pseudo-random value. */
 	memset(&ctxt, 0, sizeof(ctxt));
 	MD5Init(&ctxt);
-	MD5Update(&ctxt, (u_char *)hostname, hostnamelen);
+	MD5Update(&ctxt, (u_char *)new_ns.hostname, new_ns.hostnamelen);
 	MD5Final(digest, &ctxt);
 
 	/* assumes sizeof(digest) > sizeof(ifid) */
