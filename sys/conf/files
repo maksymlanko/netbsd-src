@@ -42,6 +42,7 @@ defflag opt_pool.h		POOL_QUARANTINE
 defflag opt_pool.h		POOL_NOCACHE
 defflag				FAULT
 
+defflag opt_ns.h		NS
 defparam opt_copy_symtab.h	makeoptions_COPY_SYMTAB
 
 defparam			DEFCORENAME
@@ -290,7 +291,6 @@ include "net/files.pf"
 obsolete defflag		CCITT		# obsolete
 obsolete defflag		HDLC		# obsolete
 obsolete defflag		LLC		# obsolete
-obsolete defflag opt_ns.h	NS NSIP		# obsolete
 obsolete defflag		IPX		# obsolete
 obsolete defparam opt_md.h	MEMORY_RBFLAGS	# superseded by
 						# MEMORY_DISK_RBFLAGS
