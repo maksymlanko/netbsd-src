@@ -1,9 +1,9 @@
 # $NetBSD$
 #
-#	NS - Kernel with Linux compatible namespacesAdd commentMore actions
+#	NS - Kernel with Linux compatible namespaces
 #
 #	This kernel is derived from GENERIC.
 
 include	"arch/amd64/conf/GENERIC"
 
-options 	NS	# Linux compatible namespaces
+options		NS	# Linux compatible namespaces

@@ -74,6 +74,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 
 #ifdef _KERNEL_OPT
 #include "opt_defcorename.h"
+#include "opt_ns.h"
 #endif
 
 #include "ksyms.h"
@@ -95,10 +96,6 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 #include <sys/systm.h>
 
 #include <crypto/blake2/blake2s.h>
-
-
-#include "opt_ns.h"
-
 
 #define	MAXDESCLEN	1024
 MALLOC_DEFINE(M_SYSCTLNODE, "sysctlnode", "sysctl node structures");
@@ -161,6 +158,7 @@ kmutex_t sysctl_file_marker_lock;
  * Attributes stored in the kernel.
  */
 #ifdef NS
+#include <sys/uts.h>
 struct uts_ns new_ns = {
 	.hostnamelen = 0,
 	.domainnamelen = 0,

@@ -40,7 +40,13 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #include <sys/kernel.h>
 #include <sys/disklabel.h>
 
+#ifdef _KERNEL_OPT
+#include "opt_ns.h"
+#endif
+
+#ifdef NS
 #include <sys/uts.h> // TODO: make ifdef
+#endif
 
 static int sysctl_setlen(SYSCTLFN_PROTO);
 
@@ -281,6 +287,12 @@ static int
 sysctl_setlen(SYSCTLFN_ARGS)
 {
 	int error;
+
+#ifdef NS
+    printf("NS: enabled, new_ns at %p\n", &new_ns);
+#else
+    printf("NS: No NS enabled\n");
+#endif
 
 	error = sysctl_lookup(SYSCTLFN_CALL(rnode));
 	if (error || newp == NULL)
