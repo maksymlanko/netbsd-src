@@ -42,7 +42,20 @@
 #if defined(_KERNEL) || defined(_STANDALONE)
 #include <sys/param.h>
 
+#ifdef _KERNEL_OPT
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
+#endif
+
+#if defined(NAMESPACES) && defined(UTS_NS)
+#include <sys/uts.h>
+#endif
+
 /* Global variables for the kernel. */
+
+#if defined(NAMESPACES) && defined(UTS_NS)
+extern struct uts_ns new_ns;
+#endif
 
 extern long hostid;
 extern char hostname[MAXHOSTNAMELEN];
