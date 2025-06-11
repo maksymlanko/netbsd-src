@@ -40,7 +40,20 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #include <sys/kernel.h>
 #include <sys/disklabel.h>
 
+#ifdef _KERNEL_OPT
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
+#endif
+
+#if defined(NAMESPACES) && defined(UTS_NS)
+#include <sys/uts.h>
+#endif
+
+#if defined(NAMESPACES) && defined(UTS_NS)
+static int sysctl_uts_names(SYSCTLFN_PROTO);
+#else
 static int sysctl_setlen(SYSCTLFN_PROTO);
+#endif
 
 /*
  * sets up the base nodes...
@@ -164,6 +177,20 @@ SYSCTL_SETUP(sysctl_kernbase_setup, "sysctl kern subtree base setup")
 		       SYSCTL_DESCR("Kernel version"),
 		       NULL, 0, __UNCONST(&version), 0,
 		       CTL_KERN, KERN_VERSION, CTL_EOL);
+#if defined(NAMESPACES) && defined(UTS_NS)
+	sysctl_createv(clog, 0, NULL, NULL,
+		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
+		       CTLTYPE_STRING, "hostname",
+		       SYSCTL_DESCR("System hostname"),
+		       sysctl_uts_names, 0, NULL, 0,
+		       CTL_KERN, KERN_HOSTNAME, CTL_EOL);
+	sysctl_createv(clog, 0, NULL, NULL,
+		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
+		       CTLTYPE_STRING, "domainname",
+		       SYSCTL_DESCR("YP domain name"),
+		       sysctl_uts_names, 0, NULL, 0,
+		       CTL_KERN, KERN_DOMAINNAME, CTL_EOL);
+#else
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "hostname",
@@ -176,6 +203,7 @@ SYSCTL_SETUP(sysctl_kernbase_setup, "sysctl kern subtree base setup")
 		       SYSCTL_DESCR("YP domain name"),
 		       sysctl_setlen, 0, domainname, MAXHOSTNAMELEN,
 		       CTL_KERN, KERN_DOMAINNAME, CTL_EOL);
+#endif
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_IMMEDIATE,
 		       CTLTYPE_INT, "rawpartition",
@@ -269,6 +297,39 @@ SYSCTL_SETUP(sysctl_hwbase_setup, "sysctl hw subtree base setup")
 		       CTL_HW, HW_NCPUONLINE, CTL_EOL);
 }
 
+#if defined(NAMESPACES) && defined(UTS_NS)
+static int
+sysctl_uts_names(SYSCTLFN_ARGS)
+{
+	int error;
+	struct sysctlnode node = *rnode;
+	node.sysctl_size = MAXHOSTNAMELEN;
+
+	switch (node.sysctl_num) {
+	case KERN_HOSTNAME:
+		node.sysctl_data = new_ns.hostname;
+		break;
+	case KERN_DOMAINNAME:
+		node.sysctl_data = new_ns.domainname;
+		break;
+	}
+
+	error = sysctl_lookup(SYSCTLFN_CALL(&node));
+	if (error || newp == NULL)
+		return (error);
+
+	switch (node.sysctl_num) {
+	case KERN_HOSTNAME:
+		new_ns.hostnamelen = strlen((const char*)node.sysctl_data);
+		break;
+	case KERN_DOMAINNAME:
+		new_ns.domainnamelen = strlen((const char*)node.sysctl_data);
+		break;
+	}
+
+	return (0);
+}
+#else
 /*
  * sysctl helper function for kern.hostname and kern.domainname.
  * resets the relevant recorded length when the underlying name is
@@ -294,3 +355,4 @@ sysctl_setlen(SYSCTLFN_ARGS)
 
 	return (0);
 }
+#endif
