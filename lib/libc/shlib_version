@@ -55,4 +55,4 @@
 # - remove tzsetwall(3), upstream has removed it
 # - move *rand48* to libcompat
 major=12
-minor=223
+minor=224

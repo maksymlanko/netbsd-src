@@ -1,4 +1,4 @@
-# $NetBSD: shl.mi,v 1.1004 2025/05/21 14:49:06 christos Exp $
+# $NetBSD: shl.mi,v 1.1005 2025/06/02 14:02:54 christos Exp $
 #
 # Note:	Don't delete entries from here - mark them as "obsolete" instead,
 #	unless otherwise stated below.
@@ -22,7 +22,7 @@
 ./lib/libblocklist.so.0.1			base-sys-shlib		dynamicroot
 ./lib/libc.so					base-sys-shlib		dynamicroot
 ./lib/libc.so.12				base-sys-shlib		dynamicroot
-./lib/libc.so.12.223				base-sys-shlib		dynamicroot
+./lib/libc.so.12.224				base-sys-shlib		dynamicroot
 ./lib/libcrypt.so				base-sys-shlib		dynamicroot
 ./lib/libcrypt.so.1				base-sys-shlib		dynamicroot
 ./lib/libcrypt.so.1.0				base-sys-shlib		dynamicroot
@@ -257,7 +257,7 @@
 ./usr/lib/libc++.so.1.0				base-sys-shlib		compatfile,libcxx
 ./usr/lib/libc.so				base-sys-shlib		compatfile
 ./usr/lib/libc.so.12				base-sys-shlib		compatfile
-./usr/lib/libc.so.12.223			base-sys-shlib		compatfile
+./usr/lib/libc.so.12.224			base-sys-shlib		compatfile
 ./usr/lib/libcbor.so				base-sys-shlib		compatfile
 ./usr/lib/libcbor.so.0				base-sys-shlib		compatfile
 ./usr/lib/libcbor.so.0.5			base-sys-shlib		compatfile
@@ -335,7 +335,7 @@
 ./usr/lib/libfetch.so.4.0			base-sys-shlib		compatfile
 ./usr/lib/libfido2.so				base-sys-shlib		compatfile
 ./usr/lib/libfido2.so.5				base-sys-shlib		compatfile
-./usr/lib/libfido2.so.5.0			base-sys-shlib		compatfile
+./usr/lib/libfido2.so.5.1			base-sys-shlib		compatfile
 ./usr/lib/libform.so				base-sys-shlib		compatfile
 ./usr/lib/libform.so.8				base-sys-shlib		compatfile
 ./usr/lib/libform.so.8.0			base-sys-shlib		compatfile

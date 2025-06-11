@@ -30,7 +30,7 @@ SUBDIR= aiomixer apply asa at audio audiocfg \
 	tabs tail talk tcopy tee telnet tftp tic time timeout tip touch \
 	tput \
 	tr true tset tsort tty ul uname unexpand unifdef \
-	uniq units unvis unzip usbhidaction usbhidctl users utoppya \
+	uniq units unshare unvis unzip usbhidaction usbhidctl users utoppya \
 	uudecode uuencode uuidgen vacation vgrind videoctl vis \
 	vmstat vndcompress w \
 	wall wc what whereis who whois \

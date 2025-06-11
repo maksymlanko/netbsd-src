@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.1805 2025/04/15 22:33:39 nia Exp $
+# $NetBSD: mi,v 1.1806 2025/05/31 15:19:12 jdc Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 ./etc/mtree/set.man				man-sys-root
@@ -690,6 +690,7 @@
 ./usr/share/man/cat1/unlzf.0			man-util-catman		.cat
 ./usr/share/man/cat1/unlzma.0			man-util-catman		.cat
 ./usr/share/man/cat1/unpigz.0			man-util-catman		.cat
+./usr/share/man/cat1/unshare.0			man-util-catman		.cat
 ./usr/share/man/cat1/unvis.0			man-util-catman		.cat
 ./usr/share/man/cat1/unxz.0			man-util-catman		.cat
 ./usr/share/man/cat1/unzip.0			man-util-catman		.cat
@@ -1879,6 +1880,7 @@
 ./usr/share/man/cat4/sony.0			man-sys-catman		.cat
 ./usr/share/man/cat4/sound.0			man-sys-catman		.cat
 ./usr/share/man/cat4/sp.0			man-obsolete		obsolete
+./usr/share/man/cat4/sparc/apc.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sparc/audioamd.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sparc/autoconf.0		man-sys-catman		.cat
 ./usr/share/man/cat4/sparc/auxreg.0		man-sys-catman		.cat
@@ -4273,6 +4275,7 @@
 ./usr/share/man/man1/unlzf.1			man-util-man		.man
 ./usr/share/man/man1/unlzma.1			man-util-man		.man
 ./usr/share/man/man1/unpigz.1			man-util-man		.man
+./usr/share/man/man1/unshare.1			man-util-man		.man
 ./usr/share/man/man1/unvis.1			man-util-man		.man
 ./usr/share/man/man1/unxz.1			man-util-man		.man
 ./usr/share/man/man1/unzip.1			man-util-man		.man
@@ -5462,6 +5465,7 @@
 ./usr/share/man/man4/sony.4			man-sys-man		.man
 ./usr/share/man/man4/sound.4			man-sys-man		.man
 ./usr/share/man/man4/sp.4			man-obsolete		obsolete
+./usr/share/man/man4/sparc/apc.4		man-sys-man		.man
 ./usr/share/man/man4/sparc/audioamd.4		man-sys-man		.man
 ./usr/share/man/man4/sparc/autoconf.4		man-sys-man		.man
 ./usr/share/man/man4/sparc/auxreg.4		man-sys-man		.man

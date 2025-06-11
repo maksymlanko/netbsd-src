@@ -85,6 +85,11 @@ pid_t	__clone(int (*)(void *), void *, int, void *);
 
 #endif /* _NETBSD_SOURCE */
 
+/* XXX explain why _GNU_SOURCE || _NETBSD_SOURCE */
+#if defined(_GNU_SOURCE) || defined(_NETBSD_SOURCE)
+int	unshare(int);
+#endif /*_GNU_SOURCE || _NETBSD_SOURCE */
+
 __END_DECLS
 
 #endif /* _SCHED_H_ */
