@@ -75,7 +75,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 #ifdef _KERNEL_OPT
 #include "opt_defcorename.h"
 #if defined(NS) && defined(UTS_NS)
-#include "sys/uts.h"
+#include <sys/uts.h>
 #endif
 #endif
 
@@ -98,6 +98,15 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 #include <sys/systm.h>
 
 #include <crypto/blake2/blake2s.h>
+
+#ifdef _KERNEL_OPT
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
+#endif
+
+#if defined(NS) && defined(UTS_NS)
+#include <sys/uts.h>
+#endif
 
 #define	MAXDESCLEN	1024
 MALLOC_DEFINE(M_SYSCTLNODE, "sysctlnode", "sysctl node structures");
@@ -168,7 +177,11 @@ int domainnamelen;
 long hostid;
 
 #if defined(NS) && defined(UTS_NS)
-struct uts_ns new_ns;
+struct uts_ns new_ns = {
+	.hostnamelen = 0,
+	.domainnamelen = 0,
+	.hostid = 0,
+};
 #endif
 
 #ifndef DEFCORENAME
