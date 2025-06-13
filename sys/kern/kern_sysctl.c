@@ -178,9 +178,11 @@ long hostid;
 
 #if defined(NAMESPACES) && defined(UTS_NS)
 struct uts_ns new_ns = {
-	.hostnamelen = 0,
-	.domainnamelen = 0,
-	.hostid = 0,
+	.hostname = hostname,
+	.hostnamelen = &hostnamelen,
+	.domainname = domainname,
+	.domainnamelen = &domainnamelen,
+	.hostid = &hostid,
 };
 #endif
 

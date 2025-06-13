@@ -7,11 +7,11 @@
 #include <sys/param.h>
 
 struct uts_ns {
-	char hostname[MAXHOSTNAMELEN];
-	int hostnamelen;
-	char domainname[MAXHOSTNAMELEN];
-	int domainnamelen;
-	long hostid;
+	char* hostname;
+	int* hostnamelen;
+	char* domainname;
+	int* domainnamelen;
+	long* hostid;
 };
 
 #endif /* _KERNEL */

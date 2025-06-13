@@ -320,10 +320,10 @@ sysctl_uts_names(SYSCTLFN_ARGS)
 
 	switch (node.sysctl_num) {
 	case KERN_HOSTNAME:
-		new_ns.hostnamelen = strlen((const char*)node.sysctl_data);
+		*new_ns.hostnamelen = strlen((const char*)node.sysctl_data);
 		break;
 	case KERN_DOMAINNAME:
-		new_ns.domainnamelen = strlen((const char*)node.sysctl_data);
+		*new_ns.domainnamelen = strlen((const char*)node.sysctl_data);
 		break;
 	}
 
