@@ -304,15 +304,18 @@ sysctl_uts_names(SYSCTLFN_ARGS)
 	int error;
 	struct sysctlnode node = *rnode;
 	node.sysctl_size = MAXHOSTNAMELEN;
+	// We need to move the l->l_proc to the kernel, otherwise it's unsafe?
+	struct uts_ns *uts = get_uts(l->l_proc);
 
 	switch (node.sysctl_num) {
 	case KERN_HOSTNAME:
-		node.sysctl_data = new_ns.hostname;
+		node.sysctl_data = uts->hostname;
 		break;
 	case KERN_DOMAINNAME:
-		node.sysctl_data = new_ns.domainname;
+		node.sysctl_data = uts->domainname;
 		break;
 	}
+	// printf("uts->hostname = %s | new_ns->hostname = %s\n", uts->hostname, new_ns.hostname);
 
 	error = sysctl_lookup(SYSCTLFN_CALL(&node));
 	if (error || newp == NULL)
@@ -320,10 +323,10 @@ sysctl_uts_names(SYSCTLFN_ARGS)
 
 	switch (node.sysctl_num) {
 	case KERN_HOSTNAME:
-		*new_ns.hostnamelen = strlen((const char*)node.sysctl_data);
+		*uts->hostnamelen = strlen((const char*)node.sysctl_data);
 		break;
 	case KERN_DOMAINNAME:
-		*new_ns.domainnamelen = strlen((const char*)node.sysctl_data);
+		*uts->domainnamelen = strlen((const char*)node.sysctl_data);
 		break;
 	}
 
