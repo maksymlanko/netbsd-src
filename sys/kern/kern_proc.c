@@ -71,6 +71,8 @@ __KERNEL_RCSID(0, "$NetBSD: kern_proc.c,v 1.280 2025/06/02 16:27:04 andvar Exp $
 #include "opt_dtrace.h"
 #include "opt_compat_netbsd32.h"
 #include "opt_kaslr.h"
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
 #endif
 
 #if defined(__HAVE_COMPAT_NETBSD32) && !defined(COMPAT_NETBSD32) \
@@ -114,6 +116,10 @@ __KERNEL_RCSID(0, "$NetBSD: kern_proc.c,v 1.280 2025/06/02 16:27:04 andvar Exp $
 #include <ufs/ufs/quota.h>
 
 #include <uvm/uvm_extern.h>
+
+#if defined(NAMESPACES)
+#include <sys/nsproxy.h>
+#endif
 
 /*
  * Process lists.
@@ -206,6 +212,11 @@ struct plimit limit0;
 struct pstats pstat0;
 struct vmspace vmspace0;
 struct sigacts sigacts0;
+#if defined(NAMESPACES)
+struct nsproxy ns0 = {
+	.uts = &new_ns,
+};
+#endif /* NAMESPACES */
 struct proc proc0 = {
 	.p_lwps = LIST_HEAD_INITIALIZER(&proc0.p_lwps),
 	.p_sigwaiters = LIST_HEAD_INITIALIZER(&proc0.p_sigwaiters),
@@ -230,6 +241,9 @@ struct proc proc0 = {
 #ifdef PROC0_MD_INITIALIZERS
 	PROC0_MD_INITIALIZERS
 #endif
+#if defined(NAMESPACES)
+	.nsproxy = &ns0,
+#endif /* NAMESPACES */
 };
 kauth_cred_t cred0;
 

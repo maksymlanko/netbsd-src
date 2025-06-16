@@ -5,6 +5,9 @@
 // I've seen this in sys/sys/rnd.h, do we need it? why?
 
 #include <sys/param.h>
+#include <sys/proc.h>
+#include <sys/nsproxy.h>
+
 // TODO: move to kernel.h..? no, this is temporary and will be done in get_ns()
 extern struct uts_ns new_ns;
 
@@ -20,8 +23,7 @@ struct uts_ns {
 static __inline struct uts_ns *
 get_uts(struct proc *p)
 {
-	// TODO: p->ns_proxy ->uts_ns
-	return &new_ns;
+	return p->nsproxy->uts;
 }
 
 #endif /* _KERNEL */

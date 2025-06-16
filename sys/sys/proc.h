@@ -76,6 +76,8 @@
 #include "opt_multiprocessor.h"
 #include "opt_kstack.h"
 #include "opt_lockdebug.h"
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
 #endif
 
 #include <machine/proc.h>		/* Machine-dependent proc substruct */
