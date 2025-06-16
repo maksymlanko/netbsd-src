@@ -332,6 +332,10 @@ struct proc {
 	vaddr_t		p_psstrp;	/* :: address of process's ps_strings */
 	u_int		p_pax;		/* :: PAX flags */
 	int		p_xexit;	/* p: exit code */
+#if defined(NAMESPACES)
+	struct nsproxy	*nsproxy;	/* proxy to process's namespaces */
+#endif /* NAMESPACES */
+
 /*
  * End area that is copied on creation
  */
