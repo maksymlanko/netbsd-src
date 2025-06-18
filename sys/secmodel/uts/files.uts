@@ -1,0 +1,5 @@
+#TODO
+
+defflag secmodel_uts
+
+file    secmodel/uts/secmodel_uts.c     secmodel_uts
