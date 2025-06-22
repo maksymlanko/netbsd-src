@@ -8,3 +8,5 @@ include	"arch/amd64/conf/GENERIC"
 
 options 	NAMESPACES	# Linux compatible namespaces
 options		UTS_NS	# UTS namespaces
+# TODO: reuse UTS_NS flag
+options         secmodel_uts    # UTS security model
