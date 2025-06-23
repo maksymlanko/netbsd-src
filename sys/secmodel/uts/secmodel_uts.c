@@ -9,6 +9,8 @@ kauth_key_t uts_key; // key to get uts data
 
 secmodel_t uts_sm; // description of uts secmodel
 
+static struct sysctllog *sysctl_uts_log; // saves sysctl nodes information
+
 // hostname is a node, but we also want system notifs?
 static kauth_listener_t l_system;
 
@@ -17,6 +19,38 @@ static int secmodel_uts_system_cb(kauth_cred_t, kauth_action_t, void *,
 void secmodel_uts_init(void);
 void secmodel_uts_start(void);
 void secmodel_uts_stop(void);
+
+static void
+sysctl_security_uts_setup(struct sysctllog **clog)
+{
+        const struct sysctlnode *rnode;
+
+        sysctl_createv(clog, 0, NULL, &rnode,
+                       CTLFLAG_PERMANENT,
+                       CTLTYPE_NODE, "security", NULL,
+                       NULL, 0, NULL, 0,
+                       CTL_CREATE, CTL_EOL);
+
+        sysctl_createv(clog, 0, &rnode, &rnode,
+                       CTLFLAG_PERMANENT,
+                       CTLTYPE_NODE, "models", NULL,
+                       NULL, 0, NULL, 0,
+                       CTL_CREATE, CTL_EOL);
+
+        sysctl_createv(clog, 0, &rnode, &rnode,
+                       CTLFLAG_PERMANENT,
+                       CTLTYPE_NODE, "uts",
+                       SYSCTL_DESCR("uts security model"),
+                       NULL, 0, NULL, 0,
+                       CTL_CREATE, CTL_EOL);
+
+        sysctl_createv(clog, 0, &rnode, NULL,
+                       CTLFLAG_PERMANENT,
+                       CTLTYPE_STRING, "name", NULL,
+                       NULL, 0, __UNCONST("UTS security model"), 0,
+                       CTL_CREATE, CTL_EOL);
+}
+
 
 void
 secmodel_uts_init(void)
@@ -62,12 +96,7 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         case MODULE_CMD_INIT:
                 secmodel_uts_init();
                 secmodel_uts_start();
-                // TODO: build node;
-                // sysctl_security_example_setup(&sysctl_example_log);
-
-                // error = secmodel_register(&uts_sm,
-                //     SECMODEL_EXAMPLE_ID, SECMODEL_EXAMPLE_NAME,
-                //     NULL, secmodel_example_eval, NULL);
+                sysctl_security_uts_setup(&sysctl_uts_log);
 
                 error = secmodel_register(&uts_sm, "org.netbsd.secmodel.uts",
                     "NetBSD Security Model: UTS", NULL, NULL, NULL);
@@ -83,8 +112,7 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
                         printf("secmodel_uts_modcmd::fini: "
                             "secmodel_deregister returned %d\n", error);
 
-                // TODO: teardown node;
-                // sysctl_teardown(&sysctl_example_log);
+                sysctl_teardown(&sysctl_uts_log);
                 secmodel_uts_stop();
                 break;
 
