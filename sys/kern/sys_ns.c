@@ -46,6 +46,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/sched.h>
 #include <sys/syscallargs.h>
 
+#include <sys/uts.h>
+
 /* Note that retval is unused as this syscall only returns success/failure. */
 int
 sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
@@ -66,7 +68,10 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
 		return EINVAL;
 	}
 
-	error = EINVAL;		/* For now, always fail. */
+	unshare_uts();
+
+	// TODO: proper return 'name'
+	error = 0;
 
 	return error;
 }

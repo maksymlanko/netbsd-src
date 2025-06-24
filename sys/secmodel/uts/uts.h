@@ -7,6 +7,7 @@
 #ifdef _KERNEL
 
 struct uts_ns *get_uts(void);
+void unshare_uts(void);
 
 // Do we need this?
 // void secmodel_uts_init(void);

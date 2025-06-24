@@ -12,6 +12,9 @@
 #include <sys/uts.h>
 #endif
 
+#include <sys/malloc.h> // for unshare_uts
+#include <sys/kmem.h>
+
 MODULE(MODULE_CLASS_SECMODEL, secmodel_uts, NULL);
 
 kauth_key_t uts_key; // key to get uts data
@@ -32,6 +35,7 @@ void secmodel_uts_init(void);
 void secmodel_uts_start(void);
 void secmodel_uts_stop(void);
 struct uts_ns *get_uts(void);
+void unshare_uts(void);
 
 // TODO: move to sys/sys/ns.c and rename get_ns()
 struct uts_ns *
@@ -48,6 +52,25 @@ get_uts(void)
     }
     // printf("Returning ns0\n");
     return &new_ns;
+}
+
+void
+unshare_uts(void)
+{
+    // TODO: do we use 'malloc' in kernel?
+    struct uts_ns *unshared_ns = kmem_zalloc(sizeof(struct uts_ns), KM_SLEEP);
+
+    // get old ns before unshare()
+    // TODO: simplify into helper function
+    kauth_cred_t prev_cred = kauth_cred_get();
+    struct uts_ns *prev_ns = kauth_cred_getdata(prev_cred, uts_key);
+    if (!prev_ns) {
+        prev_ns = &new_ns;
+    }
+    // copy old ns info into new ns
+    memcpy(unshared_ns, prev_ns, sizeof(struct uts_ns));
+    // save new ns into kauth private data
+    kauth_cred_setdata(prev_cred, uts_key, unshared_ns);
 }
 
 static void
