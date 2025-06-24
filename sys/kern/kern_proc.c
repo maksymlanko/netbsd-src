@@ -117,7 +117,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_proc.c,v 1.280 2025/06/02 16:27:04 andvar Exp $
 
 #include <uvm/uvm_extern.h>
 
-#if defined(NS)
+#if defined(NAMESPACES)
 #include <sys/nsproxy.h>
 #endif
 
@@ -212,7 +212,7 @@ struct plimit limit0;
 struct pstats pstat0;
 struct vmspace vmspace0;
 struct sigacts sigacts0;
-#if defined(NS)
+#if defined(NAMESPACES)
 struct nsproxy ns0 = {
 	.uts = &new_ns,
 };
@@ -241,7 +241,7 @@ struct proc proc0 = {
 #ifdef PROC0_MD_INITIALIZERS
 	PROC0_MD_INITIALIZERS
 #endif
-#if defined(NS)
+#if defined(NAMESPACES)
 	.nsproxy = &ns0,
 #endif /* NAMESPACES */
 };

@@ -47,13 +47,13 @@
 #include "opt_ns_uts.h"
 #endif
 
-#if defined(NS) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(UTS_NS)
 #include <sys/uts.h>
 #endif
 
 /* Global variables for the kernel. */
 
-#if defined(NS) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(UTS_NS)
 extern struct uts_ns new_ns;
 #endif
 
