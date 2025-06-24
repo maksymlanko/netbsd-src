@@ -7,6 +7,7 @@
 #include <sys/param.h>
 #include <sys/proc.h>
 #include <sys/nsproxy.h>
+#include <secmodel/uts/uts.h>
 
 // TODO: move to kernel.h..? no, this is temporary and will be done in get_ns()
 extern struct uts_ns new_ns;
@@ -18,13 +19,6 @@ struct uts_ns {
 	int* domainnamelen;
 	long* hostid;
 };
-
-// TODO: move to sys/sys/ns.c and rename get_ns()
-static __inline struct uts_ns *
-get_uts(struct proc *p)
-{
-	return p->nsproxy->uts;
-}
 
 #endif /* _KERNEL */
 

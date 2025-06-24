@@ -3,6 +3,15 @@
 #include <sys/kauth.h>
 #include <sys/sysctl.h>
 
+#if defined(_KERNEL_OPT)
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
+#endif
+
+#if defined(NAMESPACES) && defined(UTS_NS)
+#include <sys/uts.h>
+#endif
+
 MODULE(MODULE_CLASS_SECMODEL, secmodel_uts, NULL);
 
 kauth_key_t uts_key; // key to get uts data
@@ -11,14 +20,35 @@ secmodel_t uts_sm; // description of uts secmodel
 
 static struct sysctllog *sysctl_uts_log; // saves sysctl nodes information
 
-// hostname is a node, but we also want system notifs?
-static kauth_listener_t l_system;
+// remove system?
+static kauth_listener_t l_system, l_cred;
 
 static int secmodel_uts_system_cb(kauth_cred_t, kauth_action_t, void *,
     void *, void *, void *, void *);
+static int secmodel_uts_cred_cb(kauth_cred_t, kauth_action_t, void *,
+    void *, void *, void *, void *);
+
 void secmodel_uts_init(void);
 void secmodel_uts_start(void);
 void secmodel_uts_stop(void);
+struct uts_ns *get_uts(void);
+
+// TODO: move to sys/sys/ns.c and rename get_ns()
+struct uts_ns *
+get_uts(void)
+{
+    // return p->nsproxy->uts;
+
+    kauth_cred_t temp_cred = kauth_cred_get();
+    struct uts_ns *example = kauth_cred_getdata(temp_cred, uts_key);
+
+    if (example) {
+        // printf("get_uts got hostname = %s\n", example->hostname);
+        return example;
+    }
+    // printf("Returning ns0\n");
+    return &new_ns;
+}
 
 static void
 sysctl_security_uts_setup(struct sysctllog **clog)
@@ -51,7 +81,6 @@ sysctl_security_uts_setup(struct sysctllog **clog)
                        CTL_CREATE, CTL_EOL);
 }
 
-
 void
 secmodel_uts_init(void)
 {
@@ -61,9 +90,10 @@ secmodel_uts_init(void)
 void
 secmodel_uts_start(void)
 {
-    kauth_register_key(uts_sm, &uts_key);
     l_system = kauth_listen_scope(KAUTH_SCOPE_SYSTEM,
         secmodel_uts_system_cb, NULL);
+    l_cred = kauth_listen_scope(KAUTH_SCOPE_CRED,
+        secmodel_uts_cred_cb, NULL);
 
     printf("REGISTERED KEY!!!\n\n\n");
 }
@@ -72,6 +102,7 @@ void
 secmodel_uts_stop(void)
 {
         kauth_unlisten_scope(l_system);
+        kauth_unlisten_scope(l_cred);
         kauth_deregister_key(uts_key);
 }
 
@@ -82,7 +113,7 @@ secmodel_uts_system_cb(kauth_cred_t cred, kauth_action_t action,
 	// TODO: implement
 
 	int result = KAUTH_RESULT_DEFER;
-    printf("DEFERING!!!\n\n\n");
+    // printf("DEFERING!!!\n\n\n");
 
     return result;
 }
@@ -102,8 +133,15 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
                     "NetBSD Security Model: UTS", NULL, NULL, NULL);
 
                 if (error != 0)
-                        printf("secmodel_uts_modcmd::init: "
-                            "secmodel_register returned %d\n", error);
+                    printf("secmodel_uts_modcmd::init: "
+                    "secmodel_register returned %d\n", error);
+
+                error = kauth_register_key(uts_sm, &uts_key);
+
+                if (error != 0)
+                    printf("secmodel_uts_modcmd::init: "
+                    "kauth_register_key returned %d\n", error);
+
                 break;
 
         case MODULE_CMD_FINI:
@@ -122,4 +160,30 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         }
 
         return error;
+}
+
+static int
+secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
+    void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
+{
+    int result = KAUTH_RESULT_ALLOW;
+    switch (action) {
+    case KAUTH_CRED_INIT:
+        printf("CRED_INIT\n");
+        // kauth_cred_setdata(cred, uts_key, &new_ns);
+        break;
+
+    case KAUTH_CRED_COPY:
+        printf("CRED_COPY\n");
+        break;
+
+    case KAUTH_CRED_FORK:
+        printf("CRED_FORK\n");
+        break;
+
+    case KAUTH_CRED_FREE:
+        printf("CRED_FREE\n");
+        break;
+    }
+    return result;
 }
