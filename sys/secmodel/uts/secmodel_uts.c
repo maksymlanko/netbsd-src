@@ -67,8 +67,19 @@ unshare_uts(void)
     if (!prev_ns) {
         prev_ns = &new_ns;
     }
-    // copy old ns info into new ns
-    memcpy(unshared_ns, prev_ns, sizeof(struct uts_ns));
+
+    // allocate new memory for unshared ns
+    unshared_ns->hostname = kmem_alloc(MAXHOSTNAMELEN, KM_SLEEP);
+    unshared_ns->domainname = kmem_alloc(MAXHOSTNAMELEN, KM_SLEEP);
+    unshared_ns->hostnamelen = kmem_alloc(sizeof(int), KM_SLEEP);
+    unshared_ns->domainnamelen = kmem_alloc(sizeof(int), KM_SLEEP);
+
+    // copy values of old ns into unshared ns
+    strlcpy(unshared_ns->hostname, prev_ns->hostname, MAXHOSTNAMELEN);
+    strlcpy(unshared_ns->domainname, prev_ns->domainname, MAXHOSTNAMELEN);
+    *unshared_ns->hostnamelen = *prev_ns->hostnamelen;
+    *unshared_ns->domainnamelen = *prev_ns->domainnamelen;
+
     // save new ns into kauth private data
     kauth_cred_setdata(prev_cred, uts_key, unshared_ns);
 }
@@ -192,20 +203,32 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
     int result = KAUTH_RESULT_ALLOW;
     switch (action) {
     case KAUTH_CRED_INIT:
-        printf("CRED_INIT\n");
+        // printf("CRED_INIT\n");
         // kauth_cred_setdata(cred, uts_key, &new_ns);
         break;
 
     case KAUTH_CRED_COPY:
-        printf("CRED_COPY\n");
+        // printf("CRED_COPY\n");
         break;
 
     case KAUTH_CRED_FORK:
-        printf("CRED_FORK\n");
+        // printf("CRED_FORK\n");
+        // arg0 = parent proc, arg1 = child proc
+        if (arg0 && arg1) {
+            struct proc *parent = (struct proc *) arg0;
+            struct proc *child = (struct proc *) arg1;
+            struct uts_ns *parent_uts;
+
+            // Get parent's UTS namespace and copy to child
+            parent_uts = kauth_cred_getdata(parent->p_cred, uts_key);
+            if (parent_uts) {
+                kauth_cred_setdata(child_proc->p_cred, uts_key, parent_uts);
+            }
+        }
         break;
 
     case KAUTH_CRED_FREE:
-        printf("CRED_FREE\n");
+        // printf("CRED_FREE\n");
         break;
     }
     return result;
