@@ -1425,7 +1425,7 @@
 /* syscall: "semtimedop" ret: "int" args: "int" "struct sembuf *" "size_t" "struct timespec *" */
 #define	SYS_semtimedop	506
 
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 /* syscall: "unshare" ret: "int" args: "int" */
 #define	SYS_unshare	507
 

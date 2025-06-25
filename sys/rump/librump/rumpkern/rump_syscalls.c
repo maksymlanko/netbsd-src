@@ -8663,7 +8663,7 @@ struct sysent rump_sysent[] = {
 		.sy_flags = SYCALL_NOSYS,
 		.sy_call = (sy_call_t *)(void *)rumpns_sys_nomodule,
 },		/* 506 = semtimedop */
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	{
 		.sy_call = (sy_call_t *)(void *)rumpns_enosys,
 },		/* 507 = unshare */

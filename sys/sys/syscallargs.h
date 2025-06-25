@@ -3418,7 +3418,7 @@ struct sys_semtimedop_args {
 };
 check_syscall_args(sys_semtimedop)
 #endif /* !RUMP_CLIENT */
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 
 #ifndef RUMP_CLIENT
 struct sys_unshare_args {
@@ -4367,7 +4367,7 @@ int	sys___dup3100(struct lwp *, const struct sys___dup3100_args *, register_t *)
 
 int	sys_semtimedop(struct lwp *, const struct sys_semtimedop_args *, register_t *);
 
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 int	sys_unshare(struct lwp *, const struct sys_unshare_args *, register_t *);
 
 #else

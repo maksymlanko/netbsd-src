@@ -3954,7 +3954,7 @@ systrace_args(register_t sysnum, const void *params, uintptr_t *uarg, size_t *n_
 		*n_args = 4;
 		break;
 	}
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	/* sys_unshare */
 	case 507: {
 		const struct sys_unshare_args *p = params;
@@ -10693,7 +10693,7 @@ systrace_entry_setargdesc(int sysnum, int ndx, char *desc, size_t descsz)
 			break;
 		};
 		break;
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	/* sys_unshare */
 	case 507:
 		switch(ndx) {
@@ -12943,7 +12943,7 @@ systrace_return_setargdesc(int sysnum, int ndx, char *desc, size_t descsz)
 		if (ndx == 0 || ndx == 1)
 			p = "int";
 		break;
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	/* sys_unshare */
 	case 507:
 		if (ndx == 0 || ndx == 1)
