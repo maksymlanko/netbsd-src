@@ -35,34 +35,37 @@ void secmodel_uts_init(void);
 void secmodel_uts_start(void);
 void secmodel_uts_stop(void);
 struct uts_ns *get_uts(void);
+struct uts_ns *get_cred_uts(kauth_cred_t *);
 void unshare_uts(void);
 
 // TODO: move to sys/sys/ns.c and rename get_ns()
 struct uts_ns *
 get_uts(void)
 {
-    // return p->nsproxy->uts;
-
     kauth_cred_t temp_cred = kauth_cred_get();
-    struct uts_ns *example = kauth_cred_getdata(temp_cred, uts_key);
+    struct uts_ns *ns = kauth_cred_getdata(temp_cred, uts_key);
 
-    if (example) {
-        // printf("get_uts got hostname = %s\n", example->hostname);
-        return example;
+    if (ns) {
+        return ns;
     }
-    // printf("Returning ns0\n");
+
     return &new_ns;
 }
 
 void
 unshare_uts(void)
 {
-    // TODO: do we use 'malloc' in kernel?
     struct uts_ns *unshared_ns = kmem_zalloc(sizeof(struct uts_ns), KM_SLEEP);
 
-    // get old ns before unshare()
-    // TODO: simplify into helper function
     kauth_cred_t prev_cred = kauth_cred_get();
+    printf("UNSHARE_SYSCALL: AFTER_GET cred: %p cr_refcnt: %u\n",
+           prev_cred, kauth_cred_getrefcnt(prev_cred));
+
+    // certifies that cred_t has 1 reference to get unshare lifecycle correctly
+    kauth_cred_t new_cred = kauth_cred_copy(prev_cred);
+    printf("UNSHARE_SYSCALL: NEW_CRED cred: %p cr_refcnt: %u\n",
+           new_cred, kauth_cred_getrefcnt(new_cred));
+
     struct uts_ns *prev_ns = kauth_cred_getdata(prev_cred, uts_key);
     if (!prev_ns) {
         prev_ns = &new_ns;
@@ -79,9 +82,16 @@ unshare_uts(void)
     strlcpy(unshared_ns->domainname, prev_ns->domainname, MAXHOSTNAMELEN);
     *unshared_ns->hostnamelen = *prev_ns->hostnamelen;
     *unshared_ns->domainnamelen = *prev_ns->domainnamelen;
+    unshared_ns->ns_refcnt = 1;
+
+    // modify cred_t of the process
+    proc_crmod_enter();
+    proc_crmod_leave(new_cred, NULL, false);
 
     // save new ns into kauth private data
-    kauth_cred_setdata(prev_cred, uts_key, unshared_ns);
+    kauth_cred_setdata(new_cred, uts_key, unshared_ns);
+    printf("UNSHARE_SYSCALL: AFTER cred: %p ns_refcnt: %u\n",
+           new_cred, unshared_ns->ns_refcnt);
 }
 
 static void
@@ -144,9 +154,9 @@ static int
 secmodel_uts_system_cb(kauth_cred_t cred, kauth_action_t action,
     void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
 {
-	// TODO: implement
+    // TODO: implement
 
-	int result = KAUTH_RESULT_DEFER;
+    int result = KAUTH_RESULT_DEFER;
     // printf("DEFERING!!!\n\n\n");
 
     return result;
@@ -196,39 +206,94 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         return error;
 }
 
+struct uts_ns *
+get_cred_uts(kauth_cred_t *cred)
+{
+    struct uts_ns *parent_uts = kauth_cred_getdata(*cred, uts_key);
+
+    if (parent_uts) {
+        return parent_uts;
+    }
+
+    return &new_ns;
+}
+
 static int
 secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
     void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
 {
+    kauth_cred_t parent_cred;
+    struct proc *child;
     int result = KAUTH_RESULT_ALLOW;
+
     switch (action) {
     case KAUTH_CRED_INIT:
-        // printf("CRED_INIT\n");
-        // kauth_cred_setdata(cred, uts_key, &new_ns);
+        printf("CRED_INIT with cred: %p\n", cred);
         break;
 
     case KAUTH_CRED_COPY:
-        // printf("CRED_COPY\n");
+        {
+            printf("CRED_COPY\n");
+            // arg0 = destination cred, cred = source cred
+            struct uts_ns *source_ns = kauth_cred_getdata(cred, uts_key);
+
+            if (source_ns) {
+                printf("COPY before ++ and setdata: source cred=%p dest cred=%p ns_refcnt=%u\n",
+                       cred, arg0, source_ns->ns_refcnt);
+                source_ns->ns_refcnt++;
+                kauth_cred_setdata((kauth_cred_t)arg0, uts_key, source_ns);
+                printf("COPY: source cred=%p dest cred=%p ns_refcnt=%u\n",
+                       cred, arg0, source_ns->ns_refcnt);
+            }
+        }
         break;
 
     case KAUTH_CRED_FORK:
-        // printf("CRED_FORK\n");
         // arg0 = parent proc, arg1 = child proc
+        printf("CRED_FORK\n");
         if (arg0 && arg1) {
             struct proc *parent = (struct proc *) arg0;
-            struct proc *child = (struct proc *) arg1;
-            struct uts_ns *parent_uts;
+            child = (struct proc *) arg1;
 
-            // Get parent's UTS namespace and copy to child
-            parent_uts = kauth_cred_getdata(parent->p_cred, uts_key);
-            if (parent_uts) {
-                kauth_cred_setdata(child_proc->p_cred, uts_key, parent_uts);
+            parent_cred = parent->p_cred;
+            struct uts_ns *parent_ns = kauth_cred_getdata(parent_cred, uts_key);
+
+            if (parent_ns) {
+                // TODO: should we fork cred_t like secmodel_sandbox?
+                // parent_ns->ns_refcnt++;
+                kauth_cred_setdata(child->p_cred, uts_key, parent_ns);
+                printf("FORK: child cred: %p, cr_refcnt: %u ns_refcnt: %u\n",
+                       child->p_cred, kauth_cred_getrefcnt(child->p_cred),
+                       parent_ns->ns_refcnt);
+            } else {
+                printf("FORK: child cred: %p, cr_refcnt: %u (using global ns)\n",
+                       child->p_cred, kauth_cred_getrefcnt(child->p_cred));
             }
         }
         break;
 
     case KAUTH_CRED_FREE:
-        // printf("CRED_FREE\n");
+        {
+            struct uts_ns *ns = kauth_cred_getdata(cred, uts_key);
+
+            if (ns) {
+                ns->ns_refcnt--;
+                printf("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
+
+                if (ns->ns_refcnt == 0) {
+                    printf("CLEANUP: freeing namespace %p\n", ns);
+                    if (ns->hostname) kmem_free(ns->hostname, MAXHOSTNAMELEN);
+                    if (ns->domainname) kmem_free(ns->domainname, MAXHOSTNAMELEN);
+                    if (ns->hostnamelen) kmem_free(ns->hostnamelen, sizeof(int));
+                    if (ns->domainnamelen) kmem_free(ns->domainnamelen, sizeof(int));
+                    kmem_free(ns, sizeof(struct uts_ns));
+                }
+            }
+        }
+        break;
+
+    case KAUTH_CRED_CHROOT:
+        // TODO: does this affect uts_ns in any way?
         break;
     }
     return result;

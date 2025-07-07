@@ -183,6 +183,7 @@ struct uts_ns new_ns = {
 	.domainname = domainname,
 	.domainnamelen = &domainnamelen,
 	.hostid = &hostid,
+	.ns_refcnt = 1,
 };
 #endif
 

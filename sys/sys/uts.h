@@ -18,6 +18,7 @@ struct uts_ns {
 	char* domainname;
 	int* domainnamelen;
 	long* hostid;
+	u_int ns_refcnt;		/* reference count COPIED kauth_cred*/
 };
 
 #endif /* _KERNEL */
