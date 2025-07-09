@@ -88,10 +88,15 @@ unshare_uts(void)
     proc_crmod_enter();
     proc_crmod_leave(new_cred, NULL, false);
 
+    // decrement parent's ns_refcnt to cancel KAUTH_CRED_COPY increasing it
+    prev_ns->ns_refcnt--;
+
     // save new ns into kauth private data
     kauth_cred_setdata(new_cred, uts_key, unshared_ns);
-    printf("UNSHARE_SYSCALL: AFTER cred: %p ns_refcnt: %u\n",
+    printf("UNSHARE_SYSCALL: new AFTER cred: %p ns_refcnt: %u\n",
            new_cred, unshared_ns->ns_refcnt);
+    printf("UNSHARE_SYSCALL: old AFTER cred: %p ns_refcnt: %u\n",
+           prev_cred, prev_ns->ns_refcnt);
 }
 
 static void
@@ -244,6 +249,11 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
                 kauth_cred_setdata((kauth_cred_t)arg0, uts_key, source_ns);
                 printf("COPY: source cred=%p dest cred=%p ns_refcnt=%u\n",
                        cred, arg0, source_ns->ns_refcnt);
+
+                struct uts_ns *notupdated = kauth_cred_getdata(cred, uts_key);
+                printf("COPY: notupdated cred=%p dest cred=%p ns_refcnt=%u\n",
+                       cred, arg0, notupdated->ns_refcnt);
+
             }
         }
         break;
@@ -274,6 +284,7 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
 
     case KAUTH_CRED_FREE:
         {
+            printf("FREE of cred: %p\n", cred);
             struct uts_ns *ns = kauth_cred_getdata(cred, uts_key);
 
             if (ns) {
