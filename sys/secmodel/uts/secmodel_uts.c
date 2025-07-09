@@ -23,11 +23,9 @@ secmodel_t uts_sm; // description of uts secmodel
 
 static struct sysctllog *sysctl_uts_log; // saves sysctl nodes information
 
-// remove system?
-static kauth_listener_t l_system, l_cred;
+// listener for credentials scope of secmodel_uts
+static kauth_listener_t l_cred;
 
-static int secmodel_uts_system_cb(kauth_cred_t, kauth_action_t, void *,
-    void *, void *, void *, void *);
 static int secmodel_uts_cred_cb(kauth_cred_t, kauth_action_t, void *,
     void *, void *, void *, void *);
 
@@ -139,8 +137,6 @@ secmodel_uts_init(void)
 void
 secmodel_uts_start(void)
 {
-    l_system = kauth_listen_scope(KAUTH_SCOPE_SYSTEM,
-        secmodel_uts_system_cb, NULL);
     l_cred = kauth_listen_scope(KAUTH_SCOPE_CRED,
         secmodel_uts_cred_cb, NULL);
 
@@ -150,21 +146,8 @@ secmodel_uts_start(void)
 void
 secmodel_uts_stop(void)
 {
-        kauth_unlisten_scope(l_system);
         kauth_unlisten_scope(l_cred);
         kauth_deregister_key(uts_key);
-}
-
-static int
-secmodel_uts_system_cb(kauth_cred_t cred, kauth_action_t action,
-    void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
-{
-    // TODO: implement
-
-    int result = KAUTH_RESULT_DEFER;
-    // printf("DEFERING!!!\n\n\n");
-
-    return result;
 }
 
 static int
