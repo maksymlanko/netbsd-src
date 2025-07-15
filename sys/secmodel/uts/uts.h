@@ -6,7 +6,7 @@
 
 #ifdef _KERNEL
 
-struct uts_ns *get_uts(void);
+struct uts_ns *get_uts(kauth_cred_t *);
 void unshare_uts(void);
 
 // Do we need this?

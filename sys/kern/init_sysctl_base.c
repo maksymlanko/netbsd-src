@@ -304,9 +304,8 @@ sysctl_uts_names(SYSCTLFN_ARGS)
 	int error;
 	struct sysctlnode node = *rnode;
 	node.sysctl_size = MAXHOSTNAMELEN;
-	// We need to move the l->l_proc to the kernel, otherwise it's unsafe?
-	// printf("INSIDE UTS_NAMES NEWWWW!!!!!\n");
-	struct uts_ns *uts = get_uts();
+	kauth_cred_t *cred = &(l->l_cred);
+	struct uts_ns *uts = get_uts(cred);
 
 	switch (node.sysctl_num) {
 	case KERN_HOSTNAME:
