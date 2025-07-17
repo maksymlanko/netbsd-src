@@ -68,7 +68,8 @@ unshare_uts(void)
            cur_cred, kauth_cred_getrefcnt(cur_cred));
 
     // certifies that cred_t has 1 reference to get unshare lifecycle correctly
-    new_cred = kauth_cred_copy(cur_cred);
+    new_cred = kauth_cred_dup(cur_cred);
+
     dbg("UNSHARE_SYSCALL: NEW_CRED cred: %p cr_refcnt: %u\n",
            new_cred, kauth_cred_getrefcnt(new_cred));
 
@@ -95,7 +96,7 @@ unshare_uts(void)
     // decrement current ns_refcnt to cancel KAUTH_CRED_COPY incrementing it
     cur_ns->ns_refcnt--;
     // TODO: check if setting to cur_cred makes leave automatic
-    proc_crmod_leave(new_cred, NULL, false);
+    proc_crmod_leave(new_cred, cur_cred, false);
 
     // set unshared_ns as uts namespace of current process
     kauth_cred_setdata(new_cred, uts_key, unshared_ns);
