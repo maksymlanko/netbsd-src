@@ -33,6 +33,7 @@ TESTS_C+=	t_timeleft
 .if ${MKRUMP} != "no"
 TESTS_C+=	t_unmount
 .endif
+TESTS_C+=	t_uts
 TESTS_C+=	t_zombie
 
 TESTS_SH=	t_fexecve
