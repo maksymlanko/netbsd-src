@@ -68,7 +68,9 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
 		return EINVAL;
 	}
 
-	unshare_uts();
+    if (flags & CLONE_NEWUTS) {
+        unshare_uts();
+    }
 
 	// TODO: proper return 'name'
 	error = 0;
