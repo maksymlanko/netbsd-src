@@ -45,6 +45,7 @@ __RCSID("$NetBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/syscall.h> // TODO: remove after using unshare(2)
 
 #define VERSION "0.1"
 
@@ -84,7 +85,8 @@ main(int argc, char *argv[])
 	setprogname(argv[0]);
 
 	flags = 0;
-	while ((opt = getopt_long(argc, argv, "hVu:", longopts, NULL)))
+	// while ((opt = getopt_long(argc, argv, "hVu:", longopts, NULL)))
+	while ((opt = getopt_long(argc, argv, "hVu::", longopts, NULL)) != -1)
 	{
 		switch (opt) {
 		case 'u':
@@ -109,7 +111,8 @@ main(int argc, char *argv[])
 	else if ((cmd = getenv("SHELL")) == NULL)
 		cmd = _PATH_BSHELL;
 
-	if ((rv = unshare(flags)) == -1) {
+	// if ((rv = unshare(flags)) == -1) {
+	if ((rv = syscall(507, flags)) == -1) {
 		if (rv == ENOSYS)
 			err(EXIT_FAILURE, "no namespace support in the kernel");
 		else
