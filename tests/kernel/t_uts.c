@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <sched.h>
 
 #include <stdio.h>
 
@@ -30,7 +31,8 @@ ATF_TC_BODY(basic_uts_namespace, tc)
     if (pid == 0) {
         char modified_hostname[256];
 
-        ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+        // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+        ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
         ATF_REQUIRE(sethostname("new_hostname", strlen("new_hostname")) == 0);
         ATF_REQUIRE(gethostname(modified_hostname, sizeof(modified_hostname)) == 0);
@@ -68,12 +70,14 @@ ATF_TC_BODY(nested_uts_namespace, tc)
     pid_t pid1, pid2;
     char original_hostname[256];
     ATF_REQUIRE(gethostname(original_hostname, sizeof(original_hostname)) == 0);
+    printf("original: %s\n", original_hostname);
 
     pid1 = fork();
     if (pid1 == 0) {
         char modified_hostname[256];
 
-        ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+        // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+        ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
         ATF_REQUIRE(sethostname("new_hostname", strlen("new_hostname")) == 0);
         ATF_REQUIRE(gethostname(modified_hostname, sizeof(modified_hostname)) == 0);
@@ -84,12 +88,13 @@ ATF_TC_BODY(nested_uts_namespace, tc)
         if (pid2 == 0) {
             char second_hostname[256];
 
-            ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+            // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
+            ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
             ATF_REQUIRE(sethostname("second_hostname", strlen("second_hostname")) == 0);
             ATF_REQUIRE(gethostname(second_hostname, sizeof(second_hostname)) == 0);
             ATF_CHECK(strcmp(second_hostname, "second_hostname") == 0);
-            printf("second: %s\n", modified_hostname);
+            printf("second: %s\n", second_hostname);
 
             exit(0);
 
