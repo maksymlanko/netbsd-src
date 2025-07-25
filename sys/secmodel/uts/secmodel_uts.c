@@ -205,7 +205,7 @@ cred_free(kauth_cred_t cred)
     ns->ns_refcnt--;
     dbg("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
 
-    if (ns->ns_refcnt == 0) {
+    if (ns->ns_refcnt == 0 && ns != &new_ns) {
         dbg("CLEANUP: freeing namespace %p\n", ns);
         kmem_free(ns->hostname, MAXHOSTNAMELEN);
         kmem_free(ns->domainname, MAXHOSTNAMELEN);
