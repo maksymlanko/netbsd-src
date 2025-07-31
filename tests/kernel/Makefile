@@ -53,6 +53,7 @@ TESTS_SH+=	t_simplehook
 TESTS_SH+=	t_trapsignal
 TESTS_SH+=	t_umountstress
 TESTS_SH+=	t_umount
+TESTS_SH+=	t_shell_uts
 
 BINDIR=		${TESTSDIR}
 PROGS+=		h_cloexec
