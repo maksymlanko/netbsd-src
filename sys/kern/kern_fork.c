@@ -182,6 +182,8 @@ sys___clone(struct lwp *l, const struct sys___clone_args *uap,
 		flags |= FORK_SHARESIGS;
 	if (SCARG(uap, flags) & CLONE_VFORK)
 		flags |= FORK_PPWAIT;
+	if (SCARG(uap, flags) & CLONE_NEWUTS)
+		flags |= CLONE_NEWUTS;
 
 	sig = SCARG(uap, flags) & CLONE_CSIGNAL;
 	if (sig < 0 || sig >= _NSIG)
@@ -376,7 +378,10 @@ fork1(struct lwp *l1, int flags, int exitsig, void *stack, size_t stacksize,
 	} else
 		p2->p_lock = mutex_obj_alloc(MUTEX_DEFAULT, IPL_NONE);
 
-	kauth_proc_fork(p1, p2);
+	if (!(flags & CLONE_NEWUTS))
+		kauth_proc_fork(p1, p2);
+	else
+		clone_uts(p2, p1);
 
 	p2->p_raslist = NULL;
 #if defined(__HAVE_RAS)

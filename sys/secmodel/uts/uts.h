@@ -8,6 +8,7 @@
 
 struct uts_ns *get_uts(kauth_cred_t *);
 void unshare_uts(void);
+void clone_uts(struct proc *, struct proc *);
 
 // Do we need this?
 // void secmodel_uts_init(void);

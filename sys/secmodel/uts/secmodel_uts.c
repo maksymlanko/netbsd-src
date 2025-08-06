@@ -35,8 +35,9 @@ void secmodel_uts_stop(void);
 struct uts_ns *get_uts(kauth_cred_t *);
 struct uts_ns *get_cred_uts(kauth_cred_t *);
 void unshare_uts(void);
+void clone_uts(struct proc *, struct proc *);
 
-#define DBG_SECMODEL
+// #define DBG_SECMODEL
 #ifdef DBG_SECMODEL
     #define dbg(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
 #else
@@ -103,6 +104,55 @@ unshare_uts(void)
     dbg("UNSHARE_SYSCALL: new AFTER cred: %p ns_refcnt: %u\n",
            new_cred, unshared_ns->ns_refcnt);
     dbg("UNSHARE_SYSCALL: old AFTER cred: %p ns_refcnt: %u\n",
+           cur_cred, cur_ns->ns_refcnt);
+}
+
+void
+clone_uts(struct proc *child, struct proc *parent)
+{
+    struct uts_ns *unshared_ns, *cur_ns;
+    kauth_cred_t parent_cred, new_cred;
+
+    // get credentials of current process
+    parent_cred = parent->p_cred;
+    dbg("CLONE_UTS: AFTER_GET parent cred: %p cr_refcnt: %u\n",
+           parent_cred, kauth_cred_getrefcnt(parent_cred));
+
+    // certifies that cred_t has 1 reference to get unshare lifecycle correctly
+    new_cred = kauth_cred_dup(parent_cred);
+
+    dbg("CLONE_UTS: AFTER DUP parent cred: %p cr_refcnt: %u\n",
+           parent_cred, kauth_cred_getrefcnt(parent_cred));
+    dbg("CLONE_UTS: NEW_CRED cred: %p cr_refcnt: %u\n",
+           new_cred, kauth_cred_getrefcnt(new_cred));
+
+    // get uts namespace of current process
+    cur_ns = get_uts(&parent_cred);
+
+    // allocate new memory for unshared ns
+    unshared_ns                 = kmem_zalloc(sizeof(struct uts_ns), KM_SLEEP);
+    unshared_ns->hostname       = kmem_zalloc(MAXHOSTNAMELEN, KM_SLEEP);
+    unshared_ns->domainname     = kmem_zalloc(MAXHOSTNAMELEN, KM_SLEEP);
+    unshared_ns->hostnamelen    = kmem_zalloc(sizeof(int), KM_SLEEP);
+    unshared_ns->domainnamelen  = kmem_zalloc(sizeof(int), KM_SLEEP);
+
+    // copy values of current ns into unshared ns
+    strlcpy(unshared_ns->hostname, cur_ns->hostname, MAXHOSTNAMELEN);
+    strlcpy(unshared_ns->domainname, cur_ns->domainname, MAXHOSTNAMELEN);
+    *unshared_ns->hostnamelen = *cur_ns->hostnamelen;
+    *unshared_ns->domainnamelen = *cur_ns->domainnamelen;
+    // the unshared ns will start with a count of 1
+    unshared_ns->ns_refcnt = 1;
+
+    // set new uts
+    // TODO: this does NOT use kauth API, seems wrong
+    child->p_cred = new_cred;
+
+    // set unshared_ns as uts namespace of current process
+    kauth_cred_setdata(new_cred, uts_key, unshared_ns);
+    dbg("CLONE_UTS: new AFTER cred: %p ns_refcnt: %u\n",
+           new_cred, unshared_ns->ns_refcnt);
+    dbg("CLONE_UTS: old AFTER cred: %p ns_refcnt: %u\n",
            cur_cred, cur_ns->ns_refcnt);
 }
 
