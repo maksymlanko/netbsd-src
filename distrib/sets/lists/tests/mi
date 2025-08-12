@@ -2338,6 +2338,7 @@
 ./usr/tests/kernel/t_memfd_create			tests-kernel-tests	compattestfile,atf
 ./usr/tests/kernel/t_mkdir				tests-obsolete		obsolete
 ./usr/tests/kernel/t_mqueue				tests-kernel-tests	compattestfile,atf
+./usr/tests/kernel/t_namespaces 			tests-kernel-tests	atf,rump
 ./usr/tests/kernel/t_nanosleep				tests-kernel-tests	atf
 ./usr/tests/kernel/t_nointerpreter			tests-kernel-tests	atf
 ./usr/tests/kernel/t_open_pr_57260			tests-kernel-tests	compattestfile,atf
@@ -2374,7 +2375,7 @@
 ./usr/tests/kernel/t_umount				tests-kernel-tests	compattestfile,atf
 ./usr/tests/kernel/t_umountstress			tests-kernel-tests	compattestfile,atf
 ./usr/tests/kernel/t_unmount				tests-kernel-tests	atf,rump
-./usr/tests/kernel/t_uts				tests-kernel-tests	atf,rump
+./usr/tests/kernel/t_unshare				tests-kernel-tests	atf,rump
 ./usr/tests/kernel/t_writev				tests-obsolete		obsolete
 ./usr/tests/kernel/t_zombie				tests-kernel-tests	compattestfile,atf
 ./usr/tests/kernel/tty					tests-kernel-tests	compattestfile,atf

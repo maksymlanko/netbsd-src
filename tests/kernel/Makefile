@@ -20,6 +20,7 @@ TESTS_C+=	t_lock
 TESTS_C+=	t_lockf
 TESTS_C+=	t_memfd_create
 TESTS_C+=	t_mqueue
+TESTS_C+=	t_namespaces
 TESTS_C+=	t_nanosleep
 TESTS_C+=	t_open_pr_57260
 TESTS_C+=	t_proccwd
@@ -33,7 +34,6 @@ TESTS_C+=	t_timeleft
 .if ${MKRUMP} != "no"
 TESTS_C+=	t_unmount
 .endif
-TESTS_C+=	t_uts
 TESTS_C+=	t_zombie
 
 TESTS_SH=	t_fexecve
@@ -53,7 +53,7 @@ TESTS_SH+=	t_simplehook
 TESTS_SH+=	t_trapsignal
 TESTS_SH+=	t_umountstress
 TESTS_SH+=	t_umount
-TESTS_SH+=	t_shell_uts
+TESTS_SH+=	t_unshare
 
 BINDIR=		${TESTSDIR}
 PROGS+=		h_cloexec
