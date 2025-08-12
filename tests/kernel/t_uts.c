@@ -6,32 +6,25 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <sched.h>
-
 #include <stdio.h>
-
-#define CLONE_NEWUTS 0x04000000
 
 ATF_TC(basic_uts_namespace);
 ATF_TC_HEAD(basic_uts_namespace, tc)
 {
     atf_tc_set_md_var(tc, "descr", "Test unshare system call for uts namespace");
-    // TODO:  Please do not use this unless absolutely necessary!
-    // You can most likely make your tests run as a regular user if you use puffs and rump.
     atf_tc_set_md_var(tc, "require.user", "root");
 }
 ATF_TC_BODY(basic_uts_namespace, tc)
 {
-
+    char original_hostname[256], parent_hostname[256], modified_hostname[256];
     pid_t pid;
-    char original_hostname[256];
+    int status;
+
     ATF_REQUIRE(gethostname(original_hostname, sizeof(original_hostname)) == 0);
     printf("original: %s\n", original_hostname);
 
     pid = fork();
     if (pid == 0) {
-        char modified_hostname[256];
-
-        // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
         ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
         ATF_REQUIRE(sethostname("new_hostname", strlen("new_hostname")) == 0);
@@ -40,10 +33,7 @@ ATF_TC_BODY(basic_uts_namespace, tc)
         printf("modified: %s\n", modified_hostname);
 
         exit(0);
-
     } else {
-        char parent_hostname[256];
-        int status;
         waitpid(pid, &status, 0);
         // needed to fail test if child doesn't know unshare syscall
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -53,7 +43,6 @@ ATF_TC_BODY(basic_uts_namespace, tc)
         ATF_REQUIRE(gethostname(parent_hostname, sizeof(parent_hostname)) == 0);
         ATF_CHECK(strcmp(parent_hostname, original_hostname) == 0);
         printf("parent: %s\n", parent_hostname);
-
     }
 }
 
@@ -61,22 +50,20 @@ ATF_TC(nested_uts_namespace);
 ATF_TC_HEAD(nested_uts_namespace, tc)
 {
     atf_tc_set_md_var(tc, "descr", "Test nested unshare system call for uts namespace");
-    // TODO:  Please do not use this unless absolutely necessary!
-    // You can most likely make your tests run as a regular user if you use puffs and rump.
     atf_tc_set_md_var(tc, "require.user", "root");
 }
 ATF_TC_BODY(nested_uts_namespace, tc)
 {
+    char original_hostname[256], modified_hostname[256], second_hostname[256],
+        middle_hostname[256], parent_hostname[256];
     pid_t pid1, pid2;
-    char original_hostname[256];
+    int status1, status2;
+
     ATF_REQUIRE(gethostname(original_hostname, sizeof(original_hostname)) == 0);
     printf("original: %s\n", original_hostname);
 
     pid1 = fork();
     if (pid1 == 0) {
-        char modified_hostname[256];
-
-        // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
         ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
         ATF_REQUIRE(sethostname("new_hostname", strlen("new_hostname")) == 0);
@@ -86,9 +73,6 @@ ATF_TC_BODY(nested_uts_namespace, tc)
 
         pid2 = fork();
         if (pid2 == 0) {
-            char second_hostname[256];
-
-            // ATF_REQUIRE(syscall(507, CLONE_NEWUTS) == 0);
             ATF_REQUIRE(unshare(CLONE_NEWUTS) == 0);
 
             ATF_REQUIRE(sethostname("second_hostname", strlen("second_hostname")) == 0);
@@ -97,10 +81,7 @@ ATF_TC_BODY(nested_uts_namespace, tc)
             printf("second: %s\n", second_hostname);
 
             exit(0);
-
         } else {
-            char middle_hostname[256];
-            int status2;
             waitpid(pid2, &status2, 0);
             // needed to fail test if child doesn't know unshare syscall
             if (!WIFEXITED(status2) || WEXITSTATUS(status2) != 0) {
@@ -112,10 +93,7 @@ ATF_TC_BODY(nested_uts_namespace, tc)
 
             exit(0);
         }
-
     } else {
-        char parent_hostname[256];
-        int status1;
         waitpid(pid1, &status1, 0);
         // needed to fail test if child doesn't know unshare syscall
         if (!WIFEXITED(status1) || WEXITSTATUS(status1) != 0) {
@@ -125,9 +103,7 @@ ATF_TC_BODY(nested_uts_namespace, tc)
         ATF_REQUIRE(gethostname(parent_hostname, sizeof(parent_hostname)) == 0);
         ATF_CHECK(strcmp(parent_hostname, original_hostname) == 0);
         printf("parent: %s\n", parent_hostname);
-
     }
-
 }
 
 ATF_TP_ADD_TCS(tp)
