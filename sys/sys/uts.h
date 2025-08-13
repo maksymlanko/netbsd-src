@@ -6,7 +6,6 @@
 
 #include <sys/param.h>
 #include <sys/proc.h>
-#include <sys/nsproxy.h>
 #include <secmodel/uts/uts.h>
 
 // TODO: move to kernel.h..? no, this is temporary and will be done in get_ns()

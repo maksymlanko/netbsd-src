@@ -76,8 +76,6 @@
 #include "opt_multiprocessor.h"
 #include "opt_kstack.h"
 #include "opt_lockdebug.h"
-#include "opt_ns.h"
-#include "opt_ns_uts.h"
 #endif
 
 #include <machine/proc.h>		/* Machine-dependent proc substruct */
@@ -334,10 +332,6 @@ struct proc {
 	vaddr_t		p_psstrp;	/* :: address of process's ps_strings */
 	u_int		p_pax;		/* :: PAX flags */
 	int		p_xexit;	/* p: exit code */
-#if defined(NAMESPACES)
-	struct nsproxy	*nsproxy;	/* proxy to process's namespaces */
-#endif /* NAMESPACES */
-
 /*
  * End area that is copied on creation
  */
