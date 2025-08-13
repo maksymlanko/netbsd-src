@@ -8,7 +8,7 @@
 #include "opt_ns_uts.h"
 #endif
 
-#if defined(NAMESPACES) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(NS_UTS)
 #include <sys/uts.h>
 #endif
 

@@ -45,11 +45,11 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #include "opt_ns_uts.h"
 #endif
 
-#if defined(NAMESPACES) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(NS_UTS)
 #include <sys/uts.h>
 #endif
 
-#if defined(NAMESPACES) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(NS_UTS)
 static int sysctl_uts_names(SYSCTLFN_PROTO);
 #else
 static int sysctl_setlen(SYSCTLFN_PROTO);
@@ -177,7 +177,7 @@ SYSCTL_SETUP(sysctl_kernbase_setup, "sysctl kern subtree base setup")
 		       SYSCTL_DESCR("Kernel version"),
 		       NULL, 0, __UNCONST(&version), 0,
 		       CTL_KERN, KERN_VERSION, CTL_EOL);
-#if defined(NAMESPACES) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(NS_UTS)
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "hostname",
@@ -297,7 +297,7 @@ SYSCTL_SETUP(sysctl_hwbase_setup, "sysctl hw subtree base setup")
 		       CTL_HW, HW_NCPUONLINE, CTL_EOL);
 }
 
-#if defined(NAMESPACES) && defined(UTS_NS)
+#if defined(NAMESPACES) && defined(NS_UTS)
 static int
 sysctl_uts_names(SYSCTLFN_ARGS)
 {
