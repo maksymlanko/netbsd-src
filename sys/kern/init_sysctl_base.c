@@ -302,7 +302,10 @@ static int
 sysctl_uts_names(SYSCTLFN_ARGS)
 {
 	int error;
+
+    KASSERT(l != NULL);
 	struct sysctlnode node = *rnode;
+	// this protects the hostname/domainname global variables from overflowing
 	node.sysctl_size = MAXHOSTNAMELEN;
 	kauth_cred_t *cred = &(l->l_cred);
 	struct uts_ns *uts = get_uts(cred);
