@@ -378,10 +378,10 @@ fork1(struct lwp *l1, int flags, int exitsig, void *stack, size_t stacksize,
 	} else
 		p2->p_lock = mutex_obj_alloc(MUTEX_DEFAULT, IPL_NONE);
 
-	if (!(flags & CLONE_NEWUTS))
-		kauth_proc_fork(p1, p2);
-	else
+	if (flags & CLONE_NEWUTS)
 		clone_uts(p2, p1);
+	else
+		kauth_proc_fork(p1, p2);
 
 	p2->p_raslist = NULL;
 #if defined(__HAVE_RAS)
