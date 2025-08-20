@@ -2,7 +2,6 @@
 #define _SYS_UTS_NS_H_
 
 #ifdef _KERNEL
-// I've seen this in sys/sys/rnd.h, do we need it? why?
 
 #include <sys/param.h>
 #include <sys/proc.h>
@@ -16,8 +15,7 @@ struct uts_ns {
 	int* hostnamelen;
 	char* domainname;
 	int* domainnamelen;
-	long* hostid;
-	u_int ns_refcnt;		/* reference count COPIED kauth_cred*/
+	u_int ns_refcnt;
 };
 
 #endif /* _KERNEL */
