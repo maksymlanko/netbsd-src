@@ -10,10 +10,15 @@ struct uts_ns *get_uts(kauth_cred_t *);
 void unshare_uts(void);
 void clone_uts(struct proc *, struct proc *);
 
-// Do we need this?
-// void secmodel_uts_init(void);
-// void secmodel_uts_start(void);
-// void secmodel_uts_stop(void);
+struct uts_ns {
+	char* hostname;
+	int* hostnamelen;
+	char* domainname;
+	int* domainnamelen;
+	u_int ns_refcnt;
+};
+
+extern struct uts_ns new_ns;
 
 #endif /* _KERNEL */
 #endif /* _SECMODEL_UTS_H_ */
