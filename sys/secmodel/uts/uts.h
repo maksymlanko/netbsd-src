@@ -18,7 +18,7 @@ struct uts_ns {
 	u_int ns_refcnt;
 };
 
-extern struct uts_ns new_ns;
+extern struct uts_ns root_uts;
 
 #endif /* _KERNEL */
 #endif /* _SECMODEL_UTS_H_ */

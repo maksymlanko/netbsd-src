@@ -177,7 +177,7 @@ int domainnamelen;
 long hostid;
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-struct uts_ns new_ns = {
+struct uts_ns root_uts = {
 	.hostname = hostname,
 	.hostnamelen = &hostnamelen,
 	.domainname = domainname,

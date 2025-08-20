@@ -315,7 +315,6 @@ sysctl_uts_names(SYSCTLFN_ARGS)
 		node.sysctl_data = uts->domainname;
 		break;
 	}
-	// printf("uts->hostname = %s | new_ns->hostname = %s\n", uts->hostname, new_ns.hostname);
 
 	error = sysctl_lookup(SYSCTLFN_CALL(&node));
 	if (error || newp == NULL)

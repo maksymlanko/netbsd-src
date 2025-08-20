@@ -54,7 +54,7 @@
 /* Global variables for the kernel. */
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-extern struct uts_ns new_ns;
+extern struct uts_ns root_uts;
 #endif
 
 extern long hostid;

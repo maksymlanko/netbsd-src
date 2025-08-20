@@ -55,7 +55,7 @@ get_uts(kauth_cred_t *cred)
     if (ns)
         return ns;
 
-    return &new_ns;
+    return &root_uts;
 }
 
 void
@@ -238,7 +238,7 @@ cred_free(kauth_cred_t cred)
     ns->ns_refcnt--;
     dbg("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
 
-    if (ns->ns_refcnt == 0 && ns != &new_ns) {
+    if (ns->ns_refcnt == 0 && ns != &root_uts) {
         dbg("CLEANUP: freeing namespace %p\n", ns);
         kmem_free(ns->hostname, MAXHOSTNAMELEN);
         kmem_free(ns->domainname, MAXHOSTNAMELEN);
@@ -290,18 +290,6 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         }
 
         return error;
-}
-
-struct uts_ns *
-get_cred_uts(kauth_cred_t *cred)
-{
-    struct uts_ns *parent_uts = kauth_cred_getdata(*cred, uts_key);
-
-    if (parent_uts) {
-        return parent_uts;
-    }
-
-    return &new_ns;
 }
 
 static int
