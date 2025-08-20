@@ -2,6 +2,8 @@
 #include <sys/module.h>
 #include <sys/kauth.h>
 #include <sys/sysctl.h>
+#include <sys/malloc.h>
+#include <sys/kmem.h>
 
 #if defined(_KERNEL_OPT)
 #include "opt_ns.h"
@@ -11,9 +13,6 @@
 #if defined(NAMESPACES) && defined(NS_UTS)
 #include <sys/uts.h>
 #endif
-
-#include <sys/malloc.h> // for unshare_uts
-#include <sys/kmem.h>
 
 MODULE(MODULE_CLASS_SECMODEL, secmodel_uts, NULL);
 
@@ -45,7 +44,6 @@ kauth_cred_t unshare_cred_uts(kauth_cred_t);
     #define dbg(fmt, ...) do { } while (0)
 #endif /* DBG_SECMODEL */
 
-// TODO: move to sys/sys/ns.c and rename get_ns()
 struct uts_ns *
 get_uts(kauth_cred_t *cred)
 {
@@ -91,7 +89,7 @@ clone_uts(struct proc *child, struct proc *parent)
     new_cred = unshare_cred_uts(parent_cred);
 
     // set child process to use cred with new uts
-    // TODO: this does NOT use kauth API, seems wrong
+    // TODO: this does NOT use kauth API, seems... wrong?
     child->p_cred = new_cred;
 }
 
@@ -182,7 +180,7 @@ secmodel_uts_start(void)
     l_cred = kauth_listen_scope(KAUTH_SCOPE_CRED,
         secmodel_uts_cred_cb, NULL);
 
-    dbg("REGISTERED KEY!!!\n\n\n");
+    dbg("Registered key\n");
 }
 
 void
@@ -202,8 +200,6 @@ static void
 cred_copy(kauth_cred_t src_cred, kauth_cred_t dst_cred)
 {
     dbg("CRED_COPY\n");
-    // dbg("COPY before ++ and setdata: source cred=%p dest cred=%p ns_refcnt=%u\n",
-    //        cred, arg0, source_ns->ns_refcnt);
 
     struct uts_ns *src_ns = get_uts(&src_cred);
     src_ns->ns_refcnt++;
@@ -221,8 +217,7 @@ cred_fork(struct proc *parent, struct proc *child)
     kauth_cred_t parent_cred = parent->p_cred;
     struct uts_ns *parent_ns = get_uts(&parent_cred);
 
-    // TODO: should we fork cred_t like secmodel_sandbox?
-    // parent_ns->ns_refcnt++;
+    // don't increase ns_refcnt because KAUTH_CRED_COPY is called next
     kauth_cred_setdata(child->p_cred, uts_key, parent_ns);
 
     dbg("FORK: child cred: %p, cr_refcnt: %u ns_refcnt: %u\n",
@@ -234,6 +229,7 @@ static void
 cred_free(kauth_cred_t cred)
 {
     dbg("CRED_FREE\n");
+
     struct uts_ns *ns = get_uts(&cred);
     ns->ns_refcnt--;
     dbg("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
@@ -277,8 +273,8 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         case MODULE_CMD_FINI:
                 error = secmodel_deregister(uts_sm);
                 if (error != 0)
-                        dbg("secmodel_uts_modcmd::fini: "
-                            "secmodel_deregister returned %d\n", error);
+                    dbg("secmodel_uts_modcmd::fini: "
+                        "secmodel_deregister returned %d\n", error);
 
                 sysctl_teardown(&sysctl_uts_log);
                 secmodel_uts_stop();
@@ -296,6 +292,7 @@ static int
 secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
     void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
 {
+    // TODO: does this allow unwanted things from other KAUTH checks?
     int result = KAUTH_RESULT_ALLOW;
 
     switch (action) {
