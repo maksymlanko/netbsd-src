@@ -37,12 +37,12 @@ void unshare_uts(void);
 void clone_uts(struct proc *, struct proc *);
 kauth_cred_t unshare_cred_uts(kauth_cred_t);
 
-// #define DBG_SECMODEL
-#ifdef DBG_SECMODEL
-    #define dbg(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
+// #define UTS_DEBUG
+#ifdef UTS_DEBUG
+    #define DPRINTF(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
 #else
-    #define dbg(fmt, ...) do { } while (0)
-#endif /* DBG_SECMODEL */
+    #define DPRINTF(fmt, ...) do { } while (0)
+#endif /* UTS_DEBUG */
 
 struct uts_ns *
 get_uts(kauth_cred_t *cred)
@@ -98,15 +98,15 @@ unshare_cred_uts(kauth_cred_t parent_cred) {
     kauth_cred_t new_cred;
     struct uts_ns *unshared_ns, *cur_ns;
 
-    dbg("CLONE_UTS: AFTER_GET parent cred: %p cr_refcnt: %u\n",
+    DPRINTF("CLONE_UTS: AFTER_GET parent cred: %p cr_refcnt: %u\n",
            parent_cred, kauth_cred_getrefcnt(parent_cred));
 
     // certifies that cred_t has 1 reference to get unshare lifecycle correctly
     new_cred = kauth_cred_dup(parent_cred);
 
-    dbg("CLONE_UTS: AFTER DUP parent cred: %p cr_refcnt: %u\n",
+    DPRINTF("CLONE_UTS: AFTER DUP parent cred: %p cr_refcnt: %u\n",
            parent_cred, kauth_cred_getrefcnt(parent_cred));
-    dbg("CLONE_UTS: NEW_CRED cred: %p cr_refcnt: %u\n",
+    DPRINTF("CLONE_UTS: NEW_CRED cred: %p cr_refcnt: %u\n",
            new_cred, kauth_cred_getrefcnt(new_cred));
 
     // allocate new memory for unshared ns
@@ -129,10 +129,10 @@ unshare_cred_uts(kauth_cred_t parent_cred) {
 
     // set unshared_ns as uts namespace of current process
     kauth_cred_setdata(new_cred, uts_key, unshared_ns);
-    dbg("CLONE_UTS: new AFTER cred: %p ns_refcnt: %u\n",
+    DPRINTF("CLONE_UTS: new AFTER cred: %p ns_refcnt: %u\n",
            new_cred, unshared_ns->ns_refcnt);
-    dbg("CLONE_UTS: old AFTER cred: %p ns_refcnt: %u\n",
-           cur_cred, cur_ns->ns_refcnt);
+    DPRINTF("CLONE_UTS: old AFTER cred: %p ns_refcnt: %u\n",
+           parent_cred, cur_ns->ns_refcnt);
 
     return new_cred;
 }
@@ -171,7 +171,7 @@ sysctl_security_uts_setup(struct sysctllog **clog)
 void
 secmodel_uts_init(void)
 {
-    dbg("Entering init\n");
+    DPRINTF("Entering init\n");
 }
 
 void
@@ -180,7 +180,7 @@ secmodel_uts_start(void)
     l_cred = kauth_listen_scope(KAUTH_SCOPE_CRED,
         secmodel_uts_cred_cb, NULL);
 
-    dbg("Registered key\n");
+    DPRINTF("Registered key\n");
 }
 
 void
@@ -193,26 +193,26 @@ secmodel_uts_stop(void)
 static void
 cred_init(kauth_cred_t cred)
 {
-    dbg("CRED_INIT with cred: %p\n", cred);
+    DPRINTF("CRED_INIT with cred: %p\n", cred);
 }
 
 static void
 cred_copy(kauth_cred_t src_cred, kauth_cred_t dst_cred)
 {
-    dbg("CRED_COPY\n");
+    DPRINTF("CRED_COPY\n");
 
     struct uts_ns *src_ns = get_uts(&src_cred);
     src_ns->ns_refcnt++;
     kauth_cred_setdata(dst_cred, uts_key, src_ns);
 
-    dbg("COPY: source cred=%p dest cred=%p ns_refcnt=%u\n",
+    DPRINTF("COPY: source cred=%p dest cred=%p ns_refcnt=%u\n",
            src_cred, dst_cred, src_ns->ns_refcnt);
 }
 
 static void
 cred_fork(struct proc *parent, struct proc *child)
 {
-    dbg("CRED_FORK\n");
+    DPRINTF("CRED_FORK\n");
 
     kauth_cred_t parent_cred = parent->p_cred;
     struct uts_ns *parent_ns = get_uts(&parent_cred);
@@ -220,7 +220,7 @@ cred_fork(struct proc *parent, struct proc *child)
     // don't increase ns_refcnt because KAUTH_CRED_COPY is called next
     kauth_cred_setdata(child->p_cred, uts_key, parent_ns);
 
-    dbg("FORK: child cred: %p, cr_refcnt: %u ns_refcnt: %u\n",
+    DPRINTF("FORK: child cred: %p, cr_refcnt: %u ns_refcnt: %u\n",
            child->p_cred, kauth_cred_getrefcnt(child->p_cred),
            parent_ns->ns_refcnt);
 }
@@ -228,14 +228,14 @@ cred_fork(struct proc *parent, struct proc *child)
 static void
 cred_free(kauth_cred_t cred)
 {
-    dbg("CRED_FREE\n");
+    DPRINTF("CRED_FREE\n");
 
     struct uts_ns *ns = get_uts(&cred);
     ns->ns_refcnt--;
-    dbg("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
+    DPRINTF("FREE: cred=%p, ns_refcnt=%u\n", cred, ns->ns_refcnt);
 
     if (ns->ns_refcnt == 0 && ns != &root_uts) {
-        dbg("CLEANUP: freeing namespace %p\n", ns);
+        DPRINTF("CLEANUP: freeing namespace %p\n", ns);
         kmem_free(ns->hostname, MAXHOSTNAMELEN);
         kmem_free(ns->domainname, MAXHOSTNAMELEN);
         kmem_free(ns->hostnamelen, sizeof(int));
@@ -259,13 +259,13 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
                     "NetBSD Security Model: UTS", NULL, NULL, NULL);
 
                 if (error != 0)
-                    dbg("secmodel_uts_modcmd::init: "
+                    DPRINTF("secmodel_uts_modcmd::init: "
                     "secmodel_register returned %d\n", error);
 
                 error = kauth_register_key(uts_sm, &uts_key);
 
                 if (error != 0)
-                    dbg("secmodel_uts_modcmd::init: "
+                    DPRINTF("secmodel_uts_modcmd::init: "
                     "kauth_register_key returned %d\n", error);
 
                 break;
@@ -273,7 +273,7 @@ secmodel_uts_modcmd(modcmd_t cmd, void *arg)
         case MODULE_CMD_FINI:
                 error = secmodel_deregister(uts_sm);
                 if (error != 0)
-                    dbg("secmodel_uts_modcmd::fini: "
+                    DPRINTF("secmodel_uts_modcmd::fini: "
                         "secmodel_deregister returned %d\n", error);
 
                 sysctl_teardown(&sysctl_uts_log);
