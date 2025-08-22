@@ -71,7 +71,6 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         unshare_uts();
     }
 
-	// TODO: proper return 'name'
 	error = 0;
 
 	return error;

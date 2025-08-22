@@ -85,8 +85,8 @@ main(int argc, char *argv[])
 	flags = 0;
 	// TODO: persistent/bind-mounted namespaces
 
-	// + to stop collecting opts after finding unknown opt
-	// :: to optionally have an argument
+	/* + to stop collecting opts after finding unknown opt */
+	/* :: to optionally have an argument */
 	while ((opt = getopt_long(argc, argv, "+hVu::", longopts, NULL)) != -1)
 	{
 		switch (opt) {

@@ -291,7 +291,7 @@ sysctl_set_uts_names(SYSCTLFN_ARGS)
 #if defined(NAMESPACES) && defined(NS_UTS)
     KASSERT(l != NULL);
 	struct sysctlnode node = *rnode;
-	// this protects the hostname/domainname global variables from overflowing
+	/* this protects the hostname/domainname global variables from overflowing */
 	node.sysctl_size = MAXHOSTNAMELEN;
 	kauth_cred_t *cred = &(l->l_cred);
 	struct uts_ns *uts = get_uts(cred);

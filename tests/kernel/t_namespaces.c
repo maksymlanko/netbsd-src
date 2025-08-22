@@ -35,7 +35,7 @@ ATF_TC_BODY(basic_uts_namespace, tc)
         exit(0);
     } else {
         waitpid(pid, &status, 0);
-        // needed to fail test if child doesn't know unshare syscall
+        /* needed to fail test if child doesn't know unshare syscall */
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
             atf_tc_fail("Child process failed");
         }
@@ -83,7 +83,7 @@ ATF_TC_BODY(nested_uts_namespace, tc)
             exit(0);
         } else {
             waitpid(pid2, &status2, 0);
-            // needed to fail test if child doesn't know unshare syscall
+            /* needed to fail test if child doesn't know unshare syscall */
             if (!WIFEXITED(status2) || WEXITSTATUS(status2) != 0) {
                 atf_tc_fail("Nested child process failed");
             }
@@ -95,7 +95,7 @@ ATF_TC_BODY(nested_uts_namespace, tc)
         }
     } else {
         waitpid(pid1, &status1, 0);
-        // needed to fail test if child doesn't know unshare syscall
+        /* needed to fail test if child doesn't know unshare syscall */
         if (!WIFEXITED(status1) || WEXITSTATUS(status1) != 0) {
             atf_tc_fail("Child process failed");
         }

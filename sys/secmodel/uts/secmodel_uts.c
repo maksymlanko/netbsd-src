@@ -16,18 +16,13 @@
 
 MODULE(MODULE_CLASS_SECMODEL, secmodel_uts, NULL);
 
-kauth_key_t uts_key; // key to get uts data
-
-secmodel_t uts_sm; // description of uts secmodel
-
-static struct sysctllog *sysctl_uts_log; // saves sysctl nodes information
-
-// listener for credentials scope of secmodel_uts
-static kauth_listener_t l_cred;
+kauth_key_t uts_key; /* key to get uts data */
+secmodel_t uts_sm; /* description of uts secmodel */
+static struct sysctllog *sysctl_uts_log; /* saves sysctl nodes information */
+static kauth_listener_t l_cred; /* listener for credentials scope of secmodel_uts */
 
 static int secmodel_uts_cred_cb(kauth_cred_t, kauth_action_t, void *,
     void *, void *, void *, void *);
-
 void secmodel_uts_init(void);
 void secmodel_uts_start(void);
 void secmodel_uts_stop(void);
@@ -62,17 +57,17 @@ unshare_uts(void)
     kauth_cred_t cur_cred, new_cred;
     struct uts_ns *cur_ns;
 
-    // get credentials of current process
+    /* get credentials of current process */
     cur_cred = kauth_cred_get();
 
-    // get cred with unshared uts
+    /* get cred with unshared uts */
     new_cred = unshare_cred_uts(cur_cred);
 
-    // decrement current ns_refcnt to cancel KAUTH_CRED_COPY incrementing it
+    /* decrement current ns_refcnt to cancel KAUTH_CRED_COPY incrementing it */
     cur_ns = get_uts(&cur_cred);
     cur_ns->ns_refcnt--;
 
-    // modify cred_t of the current process
+    /* modify cred_t of the current process */
     proc_crmod_enter();
     proc_crmod_leave(new_cred, cur_cred, false);
 }
@@ -82,13 +77,13 @@ clone_uts(struct proc *child, struct proc *parent)
 {
     kauth_cred_t parent_cred, new_cred;
 
-    // get credentials of parent process
+    /* get credentials of parent process */
     parent_cred = parent->p_cred;
 
-    // get cred with unshared uts
+    /* get cred with unshared uts */
     new_cred = unshare_cred_uts(parent_cred);
 
-    // set child process to use cred with new uts
+    /* set child process to use cred with new uts */
     // TODO: this does NOT use kauth API, seems... wrong?
     child->p_cred = new_cred;
 }
@@ -101,7 +96,7 @@ unshare_cred_uts(kauth_cred_t parent_cred) {
     DPRINTF("CLONE_UTS: AFTER_GET parent cred: %p cr_refcnt: %u\n",
            parent_cred, kauth_cred_getrefcnt(parent_cred));
 
-    // certifies that cred_t has 1 reference to get unshare lifecycle correctly
+    /* certifies that cred_t has 1 reference to get unshare lifecycle correctly */
     new_cred = kauth_cred_dup(parent_cred);
 
     DPRINTF("CLONE_UTS: AFTER DUP parent cred: %p cr_refcnt: %u\n",
@@ -109,25 +104,25 @@ unshare_cred_uts(kauth_cred_t parent_cred) {
     DPRINTF("CLONE_UTS: NEW_CRED cred: %p cr_refcnt: %u\n",
            new_cred, kauth_cred_getrefcnt(new_cred));
 
-    // allocate new memory for unshared ns
+    /* allocate new memory for unshared ns */
     unshared_ns                 = kmem_zalloc(sizeof(struct uts_ns), KM_SLEEP);
     unshared_ns->hostname       = kmem_zalloc(MAXHOSTNAMELEN, KM_SLEEP);
     unshared_ns->domainname     = kmem_zalloc(MAXHOSTNAMELEN, KM_SLEEP);
     unshared_ns->hostnamelen    = kmem_zalloc(sizeof(int), KM_SLEEP);
     unshared_ns->domainnamelen  = kmem_zalloc(sizeof(int), KM_SLEEP);
 
-    // get uts namespace of current process
+    /* get uts namespace of current process */
     cur_ns = get_uts(&parent_cred);
 
-    // copy values of current ns into unshared ns
+    /* copy values of current ns into unshared ns */
     strlcpy(unshared_ns->hostname, cur_ns->hostname, MAXHOSTNAMELEN);
     strlcpy(unshared_ns->domainname, cur_ns->domainname, MAXHOSTNAMELEN);
     *unshared_ns->hostnamelen = *cur_ns->hostnamelen;
     *unshared_ns->domainnamelen = *cur_ns->domainnamelen;
-    // the unshared ns will start with a count of 1
+    /* the unshared ns will start with a count of 1 */
     unshared_ns->ns_refcnt = 1;
 
-    // set unshared_ns as uts namespace of current process
+    /* set unshared_ns as uts namespace of current process */
     kauth_cred_setdata(new_cred, uts_key, unshared_ns);
     DPRINTF("CLONE_UTS: new AFTER cred: %p ns_refcnt: %u\n",
            new_cred, unshared_ns->ns_refcnt);
@@ -217,7 +212,7 @@ cred_fork(struct proc *parent, struct proc *child)
     kauth_cred_t parent_cred = parent->p_cred;
     struct uts_ns *parent_ns = get_uts(&parent_cred);
 
-    // don't increase ns_refcnt because KAUTH_CRED_COPY is called next
+    /* don't increase ns_refcnt because KAUTH_CRED_COPY is called next */
     kauth_cred_setdata(child->p_cred, uts_key, parent_ns);
 
     DPRINTF("FORK: child cred: %p, cr_refcnt: %u ns_refcnt: %u\n",
@@ -292,7 +287,7 @@ static int
 secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
     void *cookie, void *arg0, void *arg1, void *arg2, void *arg3)
 {
-    // TODO: does this allow unwanted things from other KAUTH checks?
+    /* credentials scope is safe to always allow requests */
     int result = KAUTH_RESULT_ALLOW;
 
     switch (action) {
@@ -301,12 +296,12 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
         break;
 
     case KAUTH_CRED_COPY:
-        // kauth_cred_t arg0 = destination cred, kauth_cred_t cred = source cred
+        /* kauth_cred_t arg0 = destination cred, kauth_cred_t cred = source cred */
         cred_copy(cred, arg0);
         break;
 
     case KAUTH_CRED_FORK:
-        // struct proc* arg0 = parent, struct proc* arg1 = child
+        /* struct proc* arg0 = parent, struct proc* arg1 = child */
         cred_fork(arg0, arg1);
         break;
 
@@ -315,7 +310,7 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
         break;
 
     case KAUTH_CRED_CHROOT:
-        // TODO: does this affect uts_ns in any way?
+        /* TODO: does this affect uts_ns in any way? */
         break;
     }
 
