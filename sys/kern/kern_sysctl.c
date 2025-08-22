@@ -98,10 +98,6 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 
 #include <crypto/blake2/blake2s.h>
 
-#if defined(NAMESPACES) && defined(NS_UTS)
-#include <secmodel/uts/uts.h>
-#endif
-
 #define	MAXDESCLEN	1024
 MALLOC_DEFINE(M_SYSCTLNODE, "sysctlnode", "sysctl node structures");
 MALLOC_DEFINE(M_SYSCTLDATA, "sysctldata", "misc sysctl data");
@@ -169,16 +165,6 @@ char domainname[MAXHOSTNAMELEN];
 int domainnamelen;
 
 long hostid;
-
-#if defined(NAMESPACES) && defined(NS_UTS)
-struct uts_ns root_uts = {
-	.hostname = hostname,
-	.hostnamelen = &hostnamelen,
-	.domainname = domainname,
-	.domainnamelen = &domainnamelen,
-	.ns_refcnt = 1,
-};
-#endif
 
 #ifndef DEFCORENAME
 #define	DEFCORENAME	"%n.core"

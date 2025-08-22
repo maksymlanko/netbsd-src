@@ -39,6 +39,14 @@ kauth_cred_t unshare_cred_uts(kauth_cred_t);
     #define DPRINTF(fmt, ...) do { } while (0)
 #endif /* UTS_DEBUG */
 
+struct uts_ns root_uts = {
+    .hostname = hostname,
+    .hostnamelen = &hostnamelen,
+    .domainname = domainname,
+    .domainnamelen = &domainnamelen,
+    .ns_refcnt = 1,
+};
+
 struct uts_ns *
 get_uts(kauth_cred_t *cred)
 {
