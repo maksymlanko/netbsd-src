@@ -186,13 +186,13 @@ secmodel_uts_stop(void)
 }
 
 static void
-cred_init(kauth_cred_t cred)
+uts_cred_init(kauth_cred_t cred)
 {
     DPRINTF("CRED_INIT with cred: %p\n", cred);
 }
 
 static void
-cred_copy(kauth_cred_t src_cred, kauth_cred_t dst_cred)
+uts_cred_copy(kauth_cred_t src_cred, kauth_cred_t dst_cred)
 {
     DPRINTF("CRED_COPY\n");
 
@@ -205,7 +205,7 @@ cred_copy(kauth_cred_t src_cred, kauth_cred_t dst_cred)
 }
 
 static void
-cred_fork(struct proc *parent, struct proc *child)
+uts_cred_fork(struct proc *parent, struct proc *child)
 {
     DPRINTF("CRED_FORK\n");
 
@@ -221,7 +221,7 @@ cred_fork(struct proc *parent, struct proc *child)
 }
 
 static void
-cred_free(kauth_cred_t cred)
+uts_cred_free(kauth_cred_t cred)
 {
     DPRINTF("CRED_FREE\n");
 
@@ -292,25 +292,21 @@ secmodel_uts_cred_cb(kauth_cred_t cred, kauth_action_t action,
 
     switch (action) {
     case KAUTH_CRED_INIT:
-        cred_init(cred);
+        uts_cred_init(cred);
         break;
 
     case KAUTH_CRED_COPY:
         /* kauth_cred_t arg0 = destination cred, kauth_cred_t cred = source cred */
-        cred_copy(cred, arg0);
+        uts_cred_copy(cred, arg0);
         break;
 
     case KAUTH_CRED_FORK:
         /* struct proc* arg0 = parent, struct proc* arg1 = child */
-        cred_fork(arg0, arg1);
+        uts_cred_fork(arg0, arg1);
         break;
 
     case KAUTH_CRED_FREE:
-        cred_free(cred);
-        break;
-
-    case KAUTH_CRED_CHROOT:
-        /* TODO: does this affect uts_ns in any way? */
+        uts_cred_free(cred);
         break;
     }
 
