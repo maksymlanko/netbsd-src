@@ -45,8 +45,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/sched.h>
 #include <sys/syscallargs.h>
-
-#include <sys/uts.h>
+#include <secmodel/uts/uts.h>
 
 /* Note that retval is unused as this syscall only returns success/failure. */
 int

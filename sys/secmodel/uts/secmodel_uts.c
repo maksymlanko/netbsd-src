@@ -11,7 +11,7 @@
 #endif
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-#include <sys/uts.h>
+#include <secmodel/uts/uts.h>
 #endif
 
 MODULE(MODULE_CLASS_SECMODEL, secmodel_uts, NULL);

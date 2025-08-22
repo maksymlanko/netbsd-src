@@ -99,7 +99,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 #include <crypto/blake2/blake2s.h>
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-#include <sys/uts.h>
+#include <secmodel/uts/uts.h>
 #endif
 
 #define	MAXDESCLEN	1024

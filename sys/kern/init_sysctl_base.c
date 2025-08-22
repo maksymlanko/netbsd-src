@@ -46,7 +46,7 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #endif
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-#include <sys/uts.h>
+#include <secmodel/uts/uts.h>
 #endif
 
 static int sysctl_set_uts_names(SYSCTLFN_PROTO);

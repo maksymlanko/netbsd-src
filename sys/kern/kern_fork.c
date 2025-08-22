@@ -99,7 +99,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_fork.c,v 1.231 2024/05/14 19:00:44 andvar Exp $
 #include <sys/ptrace.h>
 
 #if defined(NAMESPACES) && defined(NS_UTS)
-#include <sys/uts.h>
+#include <secmodel/uts/uts.h>
 #endif /* NAMESPACES && NS_UTS */
 
 /*
