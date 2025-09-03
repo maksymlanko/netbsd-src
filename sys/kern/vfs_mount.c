@@ -1588,15 +1588,13 @@ void enter_mount_ns(void)
 {
 	TAILQ_INIT(&ns_mountlist);
 
-    // Get first mount from global list
     mount_iterator_t *iter;
     struct mount *mp;
 
     mountlist_iterator_init(&iter);
-    mp = mountlist_iterator_next(iter);
-    if (mp) {
+    while ((mp = mountlist_iterator_next(iter)) != NULL) {
         struct mountlist_entry *new_entry = mountlist_alloc(ME_MOUNT, mp);
-        TAILQ_INSERT_HEAD(&ns_mountlist, new_entry, me_list);
+        TAILQ_INSERT_TAIL(&ns_mountlist, new_entry, me_list);
     }
     mountlist_iterator_destroy(iter);
 
