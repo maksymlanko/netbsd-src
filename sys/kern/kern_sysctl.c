@@ -74,6 +74,8 @@ __KERNEL_RCSID(0, "$NetBSD: kern_sysctl.c,v 1.271 2024/09/08 09:36:51 rillig Exp
 
 #ifdef _KERNEL_OPT
 #include "opt_defcorename.h"
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
 #endif
 
 #include "ksyms.h"

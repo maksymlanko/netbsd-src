@@ -31,3 +31,8 @@ include "secmodel/overlay/files.overlay"
 # Multi-position keylock
 #
 include "secmodel/keylock/files.keylock"
+
+#
+# NS information stored in credentials of secmodel
+#
+include "secmodel/uts/files.uts"

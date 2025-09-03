@@ -82,9 +82,12 @@ main(int argc, char *argv[])
 	const char *cmd;
 
 	setprogname(argv[0]);
-
 	flags = 0;
-	while ((opt = getopt_long(argc, argv, "hVu:", longopts, NULL)))
+	// TODO: persistent/bind-mounted namespaces
+
+	/* + to stop collecting opts after finding unknown opt */
+	/* :: to optionally have an argument */
+	while ((opt = getopt_long(argc, argv, "+hVu::", longopts, NULL)) != -1)
 	{
 		switch (opt) {
 		case 'u':
@@ -105,7 +108,7 @@ main(int argc, char *argv[])
 
 	/* init cmd from argv, $SHELL or _PATH_BSHELL */
 	if (argc > 0)
-		cmd = *argv++;
+		cmd = argv[0];
 	else if ((cmd = getenv("SHELL")) == NULL)
 		cmd = _PATH_BSHELL;
 

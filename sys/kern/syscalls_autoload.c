@@ -211,7 +211,7 @@ static struct sc_autoload netbsd_syscalls_autoload[] = {
 #endif
 	    { SYS_compat_100_dup3, "compat_100" },
 	    { SYS_semtimedop, "sysv_ipc" },
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 #else
 #endif
 	    { 0, NULL }

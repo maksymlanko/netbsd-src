@@ -2483,7 +2483,7 @@ struct sysent sysent[] = {
 		.sy_flags = SYCALL_ARG_PTR,
 		.sy_call = (sy_call_t *)sys_nomodule
 	},		/* 506 = semtimedop */
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	{
 		ns(struct sys_unshare_args),
 		.sy_call = (sy_call_t *)sys_unshare

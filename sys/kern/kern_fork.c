@@ -72,6 +72,8 @@ __KERNEL_RCSID(0, "$NetBSD: kern_fork.c,v 1.231 2024/05/14 19:00:44 andvar Exp $
 
 #include "opt_ktrace.h"
 #include "opt_dtrace.h"
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -95,6 +97,10 @@ __KERNEL_RCSID(0, "$NetBSD: kern_fork.c,v 1.231 2024/05/14 19:00:44 andvar Exp $
 #include <sys/uidinfo.h>
 #include <sys/sdt.h>
 #include <sys/ptrace.h>
+
+#if defined(NAMESPACES) && defined(NS_UTS)
+#include <secmodel/uts/uts.h>
+#endif /* NAMESPACES && NS_UTS */
 
 /*
  * DTrace SDT provider definitions
@@ -182,6 +188,8 @@ sys___clone(struct lwp *l, const struct sys___clone_args *uap,
 		flags |= FORK_SHARESIGS;
 	if (SCARG(uap, flags) & CLONE_VFORK)
 		flags |= FORK_PPWAIT;
+	if (SCARG(uap, flags) & CLONE_NEWUTS)
+		flags |= CLONE_NEWUTS;
 
 	sig = SCARG(uap, flags) & CLONE_CSIGNAL;
 	if (sig < 0 || sig >= _NSIG)
@@ -376,7 +384,14 @@ fork1(struct lwp *l1, int flags, int exitsig, void *stack, size_t stacksize,
 	} else
 		p2->p_lock = mutex_obj_alloc(MUTEX_DEFAULT, IPL_NONE);
 
+#if defined(NAMESPACES) && defined(NS_UTS)
+	if (flags & CLONE_NEWUTS)
+		clone_uts(p2, p1);
+	else
+		kauth_proc_fork(p1, p2);
+#else
 	kauth_proc_fork(p1, p2);
+#endif /* NAMESPACES && NS_UTS */
 
 	p2->p_raslist = NULL;
 #if defined(__HAVE_RAS)

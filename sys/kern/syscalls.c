@@ -558,7 +558,7 @@ const char *const syscallnames[] = {
 	/* 504 */	"epoll_pwait2",
 	/* 505 */	"__dup3100",
 	/* 506 */	"semtimedop",
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	/* 507 */	"unshare",
 #else
 	/* 507 */	"#507 (excluded unshare)",
@@ -1099,7 +1099,7 @@ const char *const altsyscallnames[] = {
 	/* 504 */	NULL, /* epoll_pwait2 */
 	/* 505 */	"dup3",
 	/* 506 */	NULL, /* semtimedop */
-#if defined(NS) || !defined(_KERNEL_OPT)
+#if defined(NAMESPACES) || !defined(_KERNEL_OPT)
 	/* 507 */	NULL, /* unshare */
 #else
 	/* 507 */	NULL, /* excluded unshare */

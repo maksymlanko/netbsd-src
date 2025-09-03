@@ -171,7 +171,7 @@ file	kern/sys_memfd.c		kern
 file	kern/sys_module.c		kern
 file	kern/sys_mqueue.c		mqueue
 file	kern/sys_lwp.c			kern
-file	kern/sys_ns.c			ns
+file	kern/sys_ns.c			namespaces
 file	kern/sys_pipe.c			!pipe_socketpair
 file	kern/sys_process.c		ptrace_hooks | ktrace
 file	kern/sys_process_lwpstatus.c	kern

@@ -6,4 +6,5 @@
 
 include	"arch/amd64/conf/GENERIC"
 
-options 	NS	# Linux compatible namespaces
+options 	NAMESPACES	# Linux compatible namespaces
+options 	NS_UTS 		# UTS namespaces

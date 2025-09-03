@@ -20,6 +20,7 @@ TESTS_C+=	t_lock
 TESTS_C+=	t_lockf
 TESTS_C+=	t_memfd_create
 TESTS_C+=	t_mqueue
+TESTS_C+=	t_namespaces
 TESTS_C+=	t_nanosleep
 TESTS_C+=	t_open_pr_57260
 TESTS_C+=	t_proccwd
@@ -52,6 +53,7 @@ TESTS_SH+=	t_simplehook
 TESTS_SH+=	t_trapsignal
 TESTS_SH+=	t_umountstress
 TESTS_SH+=	t_umount
+TESTS_SH+=	t_unshare
 
 BINDIR=		${TESTSDIR}
 PROGS+=		h_cloexec

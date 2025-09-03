@@ -40,7 +40,16 @@ __KERNEL_RCSID(0, "$NetBSD: init_sysctl_base.c,v 1.9 2023/12/20 20:35:37 andvar 
 #include <sys/kernel.h>
 #include <sys/disklabel.h>
 
-static int sysctl_setlen(SYSCTLFN_PROTO);
+#ifdef _KERNEL_OPT
+#include "opt_ns.h"
+#include "opt_ns_uts.h"
+#endif
+
+#if defined(NAMESPACES) && defined(NS_UTS)
+#include <secmodel/uts/uts.h>
+#endif
+
+static int sysctl_set_uts_names(SYSCTLFN_PROTO);
 
 /*
  * sets up the base nodes...
@@ -168,13 +177,13 @@ SYSCTL_SETUP(sysctl_kernbase_setup, "sysctl kern subtree base setup")
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "hostname",
 		       SYSCTL_DESCR("System hostname"),
-		       sysctl_setlen, 0, hostname, MAXHOSTNAMELEN,
+		       sysctl_set_uts_names, 0, hostname, MAXHOSTNAMELEN,
 		       CTL_KERN, KERN_HOSTNAME, CTL_EOL);
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_STRING, "domainname",
 		       SYSCTL_DESCR("YP domain name"),
-		       sysctl_setlen, 0, domainname, MAXHOSTNAMELEN,
+		       sysctl_set_uts_names, 0, domainname, MAXHOSTNAMELEN,
 		       CTL_KERN, KERN_DOMAINNAME, CTL_EOL);
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_IMMEDIATE,
@@ -275,10 +284,40 @@ SYSCTL_SETUP(sysctl_hwbase_setup, "sysctl hw subtree base setup")
  * changed.
  */
 static int
-sysctl_setlen(SYSCTLFN_ARGS)
+sysctl_set_uts_names(SYSCTLFN_ARGS)
 {
 	int error;
 
+#if defined(NAMESPACES) && defined(NS_UTS)
+    KASSERT(l != NULL);
+	struct sysctlnode node = *rnode;
+	/* this protects the hostname/domainname global variables from overflowing */
+	node.sysctl_size = MAXHOSTNAMELEN;
+	kauth_cred_t *cred = &(l->l_cred);
+	struct uts_ns *uts = get_uts(cred);
+
+	switch (node.sysctl_num) {
+	case KERN_HOSTNAME:
+		node.sysctl_data = uts->hostname;
+		break;
+	case KERN_DOMAINNAME:
+		node.sysctl_data = uts->domainname;
+		break;
+	}
+
+	error = sysctl_lookup(SYSCTLFN_CALL(&node));
+	if (error || newp == NULL)
+		return (error);
+
+	switch (node.sysctl_num) {
+	case KERN_HOSTNAME:
+		*uts->hostnamelen = strlen((const char*)node.sysctl_data);
+		break;
+	case KERN_DOMAINNAME:
+		*uts->domainnamelen = strlen((const char*)node.sysctl_data);
+		break;
+	}
+#else
 	error = sysctl_lookup(SYSCTLFN_CALL(rnode));
 	if (error || newp == NULL)
 		return (error);
@@ -291,6 +330,7 @@ sysctl_setlen(SYSCTLFN_ARGS)
 		domainnamelen = strlen((const char*)rnode->sysctl_data);
 		break;
 	}
+#endif /* NAMESPACES && NS_UTS */
 
 	return (0);
 }
