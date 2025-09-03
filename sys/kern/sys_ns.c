@@ -70,6 +70,7 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
     if (flags & CLONE_NEWUTS) {
         unshare_uts();
     }
+    // TODO: CLONE_NEWNS
 
 	error = 0;
 
