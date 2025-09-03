@@ -47,6 +47,28 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/syscallargs.h>
 #include <secmodel/uts/uts.h>
 
+#include <sys/vnode.h> // for vfs_mount_print_all
+
+void print_all_mounts(void);
+
+void
+print_all_mounts(void)
+{
+    mount_iterator_t *iter;
+    struct mount *mp;
+
+    printf("Current mounts:\n");
+
+    mountlist_iterator_init(&iter);
+    while ((mp = mountlist_iterator_next(iter)) != NULL) {
+        printf("Mount: %s on %s (fstype: %s)\n",
+               mp->mnt_stat.f_mntfromname,  // device
+               mp->mnt_stat.f_mntonname,    // mounted on
+               mp->mnt_stat.f_fstypename);  // FS type
+    }
+    mountlist_iterator_destroy(iter);
+}
+
 /* Note that retval is unused as this syscall only returns success/failure. */
 int
 sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
@@ -70,7 +92,12 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
     if (flags & CLONE_NEWUTS) {
         unshare_uts();
     }
-    // TODO: CLONE_NEWNS
+
+    if (flags & CLONE_NEWNS) {
+        printf("entered CLONE_NEWNS unshare!!\n");
+        print_all_mounts();
+        // vfs_mount_print_all(0, printf); // WAY too verbose
+    }
 
 	error = 0;
 
