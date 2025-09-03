@@ -135,6 +135,13 @@ static kmutex_t			mntid_lock;
 static kmutex_t			mountgen_lock __cacheline_aligned;
 static uint64_t			mountgen;
 
+/* mount namespace testing stuff */
+// static TAILQ_HEAD(mountlist, mountlist_entry) ns_mountlist;
+static struct mountlist ns_mountlist;  // Same type as mountlist
+
+struct mountlist * get_mount(void);
+void enter_mount_ns(void);
+
 void
 vfs_mount_sysinit(void)
 {
@@ -1575,14 +1582,44 @@ mountlist_free(struct mountlist_entry *me)
 	kmem_free(me, sizeof(*me));
 }
 
+int in_namespace = 0;
+
+void enter_mount_ns(void)
+{
+	TAILQ_INIT(&ns_mountlist);
+
+    // Get first mount from global list
+    mount_iterator_t *iter;
+    struct mount *mp;
+
+    mountlist_iterator_init(&iter);
+    mp = mountlist_iterator_next(iter);
+    if (mp) {
+        struct mountlist_entry *new_entry = mountlist_alloc(ME_MOUNT, mp);
+        TAILQ_INSERT_HEAD(&ns_mountlist, new_entry, me_list);
+    }
+    mountlist_iterator_destroy(iter);
+
+	in_namespace = 1;
+	printf("init ns_mountlist!\n");
+}
+
+struct mountlist *get_mount(void)
+{
+	if (in_namespace)
+		return &ns_mountlist;
+	return &mountlist;
+}
+
 void
 mountlist_iterator_init(mount_iterator_t **mip)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	me = mountlist_alloc(ME_MARKER, NULL);
 	mutex_enter(&mountlist_lock);
-	TAILQ_INSERT_HEAD(&mountlist, me, me_list);
+	TAILQ_INSERT_HEAD(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 	*mip = (mount_iterator_t *)me;
 }
@@ -1591,12 +1628,13 @@ void
 mountlist_iterator_destroy(mount_iterator_t *mi)
 {
 	struct mountlist_entry *marker = &mi->mi_entry;
+	struct mountlist *current_mountlist = get_mount();
 
 	if (marker->me_mount != NULL)
 		vfs_unbusy(marker->me_mount);
 
 	mutex_enter(&mountlist_lock);
-	TAILQ_REMOVE(&mountlist, marker, me_list);
+	TAILQ_REMOVE(current_mountlist, marker, me_list);
 	mutex_exit(&mountlist_lock);
 
 	mountlist_free(marker);
@@ -1613,6 +1651,7 @@ _mountlist_iterator_next(mount_iterator_t *mi, bool wait)
 	struct mountlist_entry *me, *marker = &mi->mi_entry;
 	struct mount *mp;
 	int error;
+	struct mountlist *current_mountlist = get_mount();
 
 	if (marker->me_mount != NULL) {
 		vfs_unbusy(marker->me_mount);
@@ -1629,8 +1668,8 @@ _mountlist_iterator_next(mount_iterator_t *mi, bool wait)
 			mutex_exit(&mountlist_lock);
 			return NULL;
 		}
-		TAILQ_REMOVE(&mountlist, marker, me_list);
-		TAILQ_INSERT_AFTER(&mountlist, me, marker, me_list);
+		TAILQ_REMOVE(current_mountlist, marker, me_list);
+		TAILQ_INSERT_AFTER(current_mountlist, me, marker, me_list);
 
 		/* Skip other markers. */
 		if (me->me_type != ME_MOUNT)

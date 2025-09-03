@@ -48,6 +48,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <secmodel/uts/uts.h>
 
 #include <sys/vnode.h> // for vfs_mount_print_all
+#include <sys/mount.h>
 
 void print_all_mounts(void);
 
@@ -94,7 +95,10 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
     }
 
     if (flags & CLONE_NEWNS) {
-        printf("entered CLONE_NEWNS unshare!!\n");
+        printf("inside CLONE_NEWNS unshare!!\n");
+        print_all_mounts();
+        enter_mount_ns();
+        printf("entered namespace\n");
         print_all_mounts();
         // vfs_mount_print_all(0, printf); // WAY too verbose
     }

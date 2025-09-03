@@ -429,6 +429,10 @@ void	vfs_vnode_iterator_destroy(struct vnode_iterator *);
 struct vnode *vfs_vnode_iterator_next(struct vnode_iterator *,
     bool (*)(void *, struct vnode *), void *);
 
+// NAMESPACES STUFF
+struct mountlist * get_mount(void);
+void enter_mount_ns(void);
+
 /* Syncer */
 extern int	syncer_maxdelay;
 extern time_t	syncdelay;
