@@ -138,6 +138,7 @@ static uint64_t			mountgen;
 /* mount namespace testing stuff */
 // static TAILQ_HEAD(mountlist, mountlist_entry) ns_mountlist;
 static struct mountlist ns_mountlist;  // Same type as mountlist
+int in_namespace = 0;
 
 struct mountlist * get_mount(void);
 void enter_mount_ns(void);
@@ -950,6 +951,13 @@ dounmount(struct mount *mp, int flags, struct lwp *l)
 	int error, async, used_syncer, used_extattr;
 	const bool was_suspended = fstrans_is_owner(mp);
 
+    if (in_namespace) {
+        // namespaces can't unmount, but can hide from itself
+        // TODO: do this by checking mnt_refcnt
+        mountlist_remove(mp);
+        return 0;
+    }
+
 #if NVERIEXEC > 0
 	error = veriexec_unmountchk(mp);
 	if (error)
@@ -1582,8 +1590,6 @@ mountlist_free(struct mountlist_entry *me)
 	kmem_free(me, sizeof(*me));
 }
 
-int in_namespace = 0;
-
 void enter_mount_ns(void)
 {
 	TAILQ_INIT(&ns_mountlist);
@@ -1720,10 +1726,11 @@ void
 mountlist_append(struct mount *mp)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	me = mountlist_alloc(ME_MOUNT, mp);
 	mutex_enter(&mountlist_lock);
-	TAILQ_INSERT_TAIL(&mountlist, me, me_list);
+	TAILQ_INSERT_TAIL(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 }
 
@@ -1734,13 +1741,14 @@ void
 mountlist_remove(struct mount *mp)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	mutex_enter(&mountlist_lock);
-	TAILQ_FOREACH(me, &mountlist, me_list)
+	TAILQ_FOREACH(me, current_mountlist, me_list)
 		if (me->me_type == ME_MOUNT && me->me_mount == mp)
 			break;
 	KASSERT(me != NULL);
-	TAILQ_REMOVE(&mountlist, me, me_list);
+	TAILQ_REMOVE(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 	mountlist_free(me);
 }
