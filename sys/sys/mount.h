@@ -432,6 +432,7 @@ struct vnode *vfs_vnode_iterator_next(struct vnode_iterator *,
 // NAMESPACES STUFF
 struct mountlist * get_mount(void);
 void enter_mount_ns(void);
+void leave_mount_ns(void);
 
 /* Syncer */
 extern int	syncer_maxdelay;

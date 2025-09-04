@@ -49,8 +49,38 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/vnode.h> // for vfs_mount_print_all
 #include <sys/mount.h>
+#include <sys/syscallargs.h>
 
 void print_all_mounts(void);
+int unmount_from_kernel(void);
+
+int unmount_from_kernel(void)
+{
+    struct mount *mp;
+    mount_iterator_t *iter;
+    int error;
+
+    mountlist_iterator_init(&iter);
+    while ((mp = mountlist_iterator_next(iter)) != NULL) {
+        if (strcmp(mp->mnt_stat.f_mntonname, "/tmp") == 0) {
+            printf("found /tmp\n");
+
+            // dounmount() asks us to have reference to mount point if unmounting
+            vfs_ref(mp);
+            mountlist_iterator_destroy(iter);
+
+            error = dounmount(mp, MNT_FORCE, curlwp);
+            if (error) {
+                printf("dounmount failed: error %d\n", error);
+                return error;
+            }
+            return 0;
+        }
+    }
+    mountlist_iterator_destroy(iter);
+    printf("didn't find /tmp!\n");
+    return -1;
+}
 
 void
 print_all_mounts(void)
@@ -100,6 +130,16 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         enter_mount_ns();
         printf("entered namespace\n");
         print_all_mounts();
+
+        printf("unmounting /tmp\n");
+        unmount_from_kernel();
+        printf("unmounted!\n");
+        print_all_mounts();
+
+        leave_mount_ns();
+        printf("left namespace back to global\n");
+        print_all_mounts();
+
         // vfs_mount_print_all(0, printf); // WAY too verbose
     }
 

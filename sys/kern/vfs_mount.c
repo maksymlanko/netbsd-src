@@ -1602,6 +1602,11 @@ void enter_mount_ns(void)
 	printf("init ns_mountlist!\n");
 }
 
+void leave_mount_ns(void)
+{
+	in_namespace = 0;
+}
+
 struct mountlist *get_mount(void)
 {
 	if (in_namespace)
