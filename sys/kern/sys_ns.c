@@ -53,6 +53,9 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 void print_all_mounts(void);
 int unmount_from_kernel(void);
+struct mount *get_tmp(void);
+struct vnode *get_mnt_test(void);
+
 
 int unmount_from_kernel(void)
 {
@@ -80,6 +83,39 @@ int unmount_from_kernel(void)
     mountlist_iterator_destroy(iter);
     printf("didn't find /tmp!\n");
     return -1;
+}
+
+struct mount *get_tmp(void)
+{
+    struct mount *mp;
+    mount_iterator_t *iter;
+
+    mountlist_iterator_init(&iter);
+    while ((mp = mountlist_iterator_next(iter)) != NULL) {
+        if (strcmp(mp->mnt_stat.f_mntonname, "/tmp") == 0) {
+            printf("found /tmp\n");
+            mountlist_iterator_destroy(iter);
+
+            return mp;
+        }
+    }
+    mountlist_iterator_destroy(iter);
+    printf("didn't find /tmp!\n");
+    return NULL;
+}
+
+struct vnode *get_mnt_test(void)
+{
+    struct vnode *vp;
+    int error;
+
+    error = namei_simple_kernel("/home/maksym/mnt_test", NSM_FOLLOW_NOEMULROOT, &vp);
+    if (error) {
+        printf("Failed to get vnode for %s: %d\n", "mnt_test", error);
+        return NULL;
+    }
+
+    return vp;
 }
 
 void
@@ -131,14 +167,22 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         printf("entered namespace\n");
         print_all_mounts();
 
-        printf("unmounting /tmp\n");
-        unmount_from_kernel();
-        printf("unmounted!\n");
+        printf("cloning /tmp to /home/maksym/mnt_test\n");
+        struct mount *tmp = get_tmp();
+        struct vnode *vp = get_mnt_test();
+        clone_mnt(tmp, vp);
+        printf("cloned into /home/maksym/mnt_test!\n");
         print_all_mounts();
 
-        leave_mount_ns();
-        printf("left namespace back to global\n");
-        print_all_mounts();
+
+        // printf("unmounting /tmp\n");
+        // unmount_from_kernel();
+        // printf("unmounted!\n");
+        // print_all_mounts();
+
+        // leave_mount_ns();
+        // printf("left namespace back to global\n");
+        // print_all_mounts();
 
         // vfs_mount_print_all(0, printf); // WAY too verbose
     }

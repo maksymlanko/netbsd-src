@@ -173,6 +173,7 @@ vfs_mountalloc(struct vfsops *vfsops, vnode_t *vp)
 	mp->mnt_vnodecovered = vp;
 	mount_initspecific(mp);
 
+    // Allocate mount state. what?
 	error = fstrans_mount(mp);
 	KASSERT(error == 0);
 
@@ -1588,6 +1589,37 @@ mountlist_free(struct mountlist_entry *me)
 {
 
 	kmem_free(me, sizeof(*me));
+}
+
+// Copy (mount) old into (vnode) mnt_point
+struct mount *
+clone_mnt(struct mount *old, struct vnode *mnt_point)
+{
+	struct mount *new;
+
+	new = vfs_mountalloc(old->mnt_op, mnt_point);
+
+	new->mnt_flag = old->mnt_flag;
+	// TODO: what is internal flags?
+	// new->mnt_iflag = old->mnt_iflag;
+	new->mnt_fs_bshift = old->mnt_fs_bshift;
+	new->mnt_dev_bshift = old->mnt_dev_bshift;
+
+	// TOOD: we probably don't want to mess with 'mnt_lower', or maybe later
+    // TODO: what to do with logging ops 'wapbl_ops' and log info 'mnt_wapbl'?
+    // TODO: what is 'mnt_synclist_slot'?
+    // TODO: should we add 'mnt_stat' here? from outside..?
+
+	// TODO: find EXACTLY what is used here
+	// TODO: probably should inc refcount on device..?
+	new->mnt_data = old->mnt_data;
+
+	// this is what makes the vnode findable in the FS, but it crashes on tmpfs_init_vnode:
+	// KASSERT(node->tn_vnode == NULL);
+
+	// make it visible by changing vnode to know it's mounted there
+	// mnt_point->v_mountedhere = new;
+	return new;
 }
 
 void enter_mount_ns(void)

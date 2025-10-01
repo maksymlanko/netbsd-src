@@ -433,6 +433,7 @@ struct vnode *vfs_vnode_iterator_next(struct vnode_iterator *,
 struct mountlist * get_mount(void);
 void enter_mount_ns(void);
 void leave_mount_ns(void);
+struct mount *clone_mnt(struct mount *old, struct vnode *mnt_point);
 
 /* Syncer */
 extern int	syncer_maxdelay;
