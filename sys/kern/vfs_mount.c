@@ -140,8 +140,17 @@ static uint64_t			mountgen;
 static struct mountlist ns_mountlist;  // Same type as mountlist
 int in_namespace = 0;
 
+struct mount_pair {
+	TAILQ_ENTRY(mount_pair) mpair_list;	/* Mount list. */
+	struct vnode *ns_mount;
+	struct vnode *real_mount;
+};
+
+static TAILQ_HEAD(mountlist_table, mount_pair) mountlist_table;
+
 struct mountlist * get_mount(void);
 void enter_mount_ns(void);
+void mountlist_table_append(struct vnode *, struct vnode *);
 
 void
 vfs_mount_sysinit(void)
@@ -1584,47 +1593,101 @@ mountlist_alloc(enum mountlist_type type, struct mount *mp)
 	return me;
 }
 
-static void
-mountlist_free(struct mountlist_entry *me)
+static struct mount_pair *
+mount_pair_alloc(struct vnode *real_mount, struct vnode *mnt_point)
 {
+	struct mount_pair *mpair;
 
-	kmem_free(me, sizeof(*me));
+	mpair = kmem_zalloc(sizeof(*mpair), KM_SLEEP);
+	mpair->ns_mount = mnt_point;
+	mpair->real_mount = real_mount;
+
+	return mpair;
+}
+
+struct vnode *
+lookup_namespace(struct vnode *mountpoint) {
+	struct mount_pair *mpair = NULL;
+
+	// TODO: lock unlock
+	TAILQ_FOREACH(mpair, &mountlist_table, mpair_list) {
+		if (mpair->ns_mount == mountpoint) {
+			return mpair->real_mount;
+		}
+	}
+	return NULL;
+}
+
+void
+mountlist_table_append(struct vnode *old, struct vnode *mnt_point)
+{
+	struct mount_pair *mpair;
+	mpair = mount_pair_alloc(old, mnt_point);
+
+	// TODO: lock unlock
+	TAILQ_INSERT_TAIL(&mountlist_table, mpair, mpair_list);
 }
 
 // Copy (mount) old into (vnode) mnt_point
 struct mount *
-clone_mnt(struct mount *old, struct vnode *mnt_point)
+clone_mnt(struct vnode *old, struct vnode *mnt_point)
 {
-	struct mount *new;
+	printf("CLONING MNT!!!!\n\n\n\n");
+	mountlist_table_append(old, mnt_point);
+	// TODO: is this right?
+	// THIS BREAKS FOR FILES!!!
+	mnt_point->v_mountedhere = old->v_mount;
 
-	new = vfs_mountalloc(old->mnt_op, mnt_point);
-
-	new->mnt_flag = old->mnt_flag;
-	// TODO: what is internal flags?
-	// new->mnt_iflag = old->mnt_iflag;
-	new->mnt_fs_bshift = old->mnt_fs_bshift;
-	new->mnt_dev_bshift = old->mnt_dev_bshift;
-
-	// TOOD: we probably don't want to mess with 'mnt_lower', or maybe later
-    // TODO: what to do with logging ops 'wapbl_ops' and log info 'mnt_wapbl'?
-    // TODO: what is 'mnt_synclist_slot'?
-    // TODO: should we add 'mnt_stat' here? from outside..?
-
-	// TODO: find EXACTLY what is used here
-	// TODO: probably should inc refcount on device..?
-	new->mnt_data = old->mnt_data;
-
-	// this is what makes the vnode findable in the FS, but it crashes on tmpfs_init_vnode:
-	// KASSERT(node->tn_vnode == NULL);
-
-	// make it visible by changing vnode to know it's mounted there
-	// mnt_point->v_mountedhere = new;
-	return new;
+	// TODO: make return void
+	return old->v_mount;
 }
+
+static void
+mountlist_free(struct mountlist_entry *me)
+{
+	kmem_free(me, sizeof(*me));
+}
+
+// // Copy (mount) old into (vnode) mnt_point
+// struct mount *
+// clone_mnt(struct mount *old, struct vnode *mnt_point)
+// {
+// 	struct mount *new;
+
+// 	new = vfs_mountalloc(old->mnt_op, mnt_point);
+
+// 	new->mnt_flag = old->mnt_flag;
+// 	// TODO: what is internal flags?
+// 	// new->mnt_iflag = old->mnt_iflag;
+// 	new->mnt_fs_bshift = old->mnt_fs_bshift;
+// 	new->mnt_dev_bshift = old->mnt_dev_bshift;
+
+// 	// TODO: we probably don't want to mess with 'mnt_lower', or maybe later
+//     // TODO: what to do with logging ops 'wapbl_ops' and log info 'mnt_wapbl'?
+//     // TODO: what is 'mnt_synclist_slot'?
+//     // TODO: should we add 'mnt_stat' here? from outside..?
+
+// 	// TODO: find EXACTLY what is used here
+// 	// TODO: probably should inc refcount on device..?
+// 	// TODO: try to make wrapper that really/fake calls VFS_UMOUNT on mnt_data
+// 	new->mnt_data = old->mnt_data;
+
+// 	// this is what makes the vnode findable in the FS, but it crashes on tmpfs_init_vnode:
+// 	// KASSERT(node->tn_vnode == NULL);
+
+// 	// TODO: check all struct vnode fields
+// 	// TODO: try to fix vcache_get()
+// 	// TODO: understand vcache
+
+// 	// make it visible by changing vnode to know it's mounted there
+// 	// mnt_point->v_mountedhere = new;
+// 	return new;
+// }
 
 void enter_mount_ns(void)
 {
 	TAILQ_INIT(&ns_mountlist);
+	TAILQ_INIT(&mountlist_table);
 
     mount_iterator_t *iter;
     struct mount *mp;
@@ -1650,6 +1713,13 @@ struct mountlist *get_mount(void)
 	if (in_namespace)
 		return &ns_mountlist;
 	return &mountlist;
+}
+
+int inside_namespace(void)
+{
+	if (in_namespace)
+		return 1;
+	return 0;
 }
 
 void

@@ -55,6 +55,7 @@ void print_all_mounts(void);
 int unmount_from_kernel(void);
 struct mount *get_tmp(void);
 struct vnode *get_mnt_test(void);
+struct vnode *get_tmp_vnode(void);
 
 
 int unmount_from_kernel(void)
@@ -102,6 +103,20 @@ struct mount *get_tmp(void)
     mountlist_iterator_destroy(iter);
     printf("didn't find /tmp!\n");
     return NULL;
+}
+
+struct vnode *get_tmp_vnode(void)
+{
+    struct vnode *vp;
+    int error;
+
+    error = namei_simple_kernel("/tmp", NSM_FOLLOW_NOEMULROOT, &vp);
+    if (error) {
+        printf("Failed to get vnode for %s: %d\n", "/tmp", error);
+        return NULL;
+    }
+
+    return vp;
 }
 
 struct vnode *get_mnt_test(void)
@@ -168,7 +183,7 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         print_all_mounts();
 
         printf("cloning /tmp to /home/maksym/mnt_test\n");
-        struct mount *tmp = get_tmp();
+        struct vnode *tmp = get_tmp_vnode();
         struct vnode *vp = get_mnt_test();
         clone_mnt(tmp, vp);
         printf("cloned into /home/maksym/mnt_test!\n");

@@ -927,6 +927,7 @@ lookup_crossmount(struct namei_state *state,
 	struct vnode *searchdir;
 	struct mount *mp;
 	int error, lktype;
+	struct vnode *nsobj;
 
 	searchdir = *searchdir_ret;
 	foundobj = *foundobj_ret;
@@ -955,47 +956,61 @@ lookup_crossmount(struct namei_state *state,
 		 * Try the namecache first.  If that doesn't work, do
 		 * it the hard way.
 		 */
-		if (cache_lookup_mount(foundobj, &vp)) {
-			vrele(foundobj);
-			foundobj = vp;
+
+
+		if (inside_namespace()) {
+			// printf("inside namespace from vfs_lookup!\n");
+			nsobj = lookup_namespace(foundobj);
+			if (nsobj) {
+				vref(nsobj);
+				vrele(foundobj);
+				foundobj = nsobj;
+				printf("FOUND BIND MOUNTED DIR!!!!\n\n");
+				break;
+			}
 		} else {
-			/* First get the vnodes mount stable. */
-			while ((mp = foundobj->v_mountedhere) != NULL) {
-				fstrans_start(mp);
-				if (fstrans_held(mp) &&
-				    mp == foundobj->v_mountedhere) {
+			if (cache_lookup_mount(foundobj, &vp)) {
+				vrele(foundobj);
+				foundobj = vp;
+			} else {
+				/* First get the vnodes mount stable. */
+				while ((mp = foundobj->v_mountedhere) != NULL) {
+					fstrans_start(mp);
+					if (fstrans_held(mp) &&
+					    mp == foundobj->v_mountedhere) {
+						break;
+					}
+					fstrans_done(mp);
+				}
+				if (mp == NULL) {
 					break;
 				}
+
+				/*
+				 * Now get a reference on the root vnode.
+				 * XXX Future - maybe allow only VDIR here.
+				 */
+				error = VFS_ROOT(mp, LK_NONE, &vp);
+
+				/*
+				 * If successful, enter it into the cache while
+				 * holding the mount busy (competing with unmount).
+				 */
+				if (error == 0) {
+					cache_enter_mount(foundobj, vp);
+				}
+
+				/*
+				 * Finally, drop references to foundobj & mountpoint.
+				 */
+				vrele(foundobj);
 				fstrans_done(mp);
+				if (error) {
+					foundobj = NULL;
+					break;
+				}
+				foundobj = vp;
 			}
-			if (mp == NULL) {
-				break;
-			}
-
-			/*
-			 * Now get a reference on the root vnode.
-			 * XXX Future - maybe allow only VDIR here.
-			 */
-			error = VFS_ROOT(mp, LK_NONE, &vp);
-
-			/*
-			 * If successful, enter it into the cache while
-			 * holding the mount busy (competing with unmount).
-			 */
-			if (error == 0) {
-				cache_enter_mount(foundobj, vp);
-			}
-
-			/*
-			 * Finally, drop references to foundobj & mountpoint.
-			 */
-			vrele(foundobj);
-			fstrans_done(mp);
-			if (error) {
-				foundobj = NULL;
-				break;
-			}
-			foundobj = vp;
 		}
 
 		/*
