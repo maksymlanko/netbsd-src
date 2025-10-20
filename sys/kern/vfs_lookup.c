@@ -927,7 +927,7 @@ lookup_crossmount(struct namei_state *state,
 	struct vnode *searchdir;
 	struct mount *mp;
 	int error, lktype;
-	struct vnode *nsobj;
+	// struct vnode *nsobj;
 
 	searchdir = *searchdir_ret;
 	foundobj = *foundobj_ret;
@@ -957,18 +957,20 @@ lookup_crossmount(struct namei_state *state,
 		 * it the hard way.
 		 */
 
+		// TODO: this became useless with our bind-mounts
+		// if (inside_namespace()) {
+		// 	// printf("inside namespace from vfs_lookup!\n");
+		// 	nsobj = lookup_namespace(foundobj);
+		// 	if (nsobj) {
+		// 		vref(nsobj);
+		// 		vrele(foundobj);
+		// 		foundobj = nsobj;
+		// 		printf("FOUND BIND MOUNTED DIR!!!!\n\n");
+		// 		break;
+		// 	}
+		// } else {
+		{
 
-		if (inside_namespace()) {
-			// printf("inside namespace from vfs_lookup!\n");
-			nsobj = lookup_namespace(foundobj);
-			if (nsobj) {
-				vref(nsobj);
-				vrele(foundobj);
-				foundobj = nsobj;
-				printf("FOUND BIND MOUNTED DIR!!!!\n\n");
-				break;
-			}
-		} else {
 			if (cache_lookup_mount(foundobj, &vp)) {
 				vrele(foundobj);
 				foundobj = vp;

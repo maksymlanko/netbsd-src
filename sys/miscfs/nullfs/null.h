@@ -112,6 +112,8 @@ extern int (**null_vnodeop_p)(void *);
 extern struct vfsops nullfs_vfsops;
 
 void nullfs_init(void);
+// TODO: use `do_mount()` and remove this from being exported
+int nullfs_mount(struct mount *mp, const char *path, void *data, size_t *data_len);
 
 #endif /* _KERNEL */
 #endif /* _MISCFS_NULLFS_H_ */

@@ -125,7 +125,11 @@ nullfs_mount(struct mount *mp, const char *path, void *data, size_t *data_len)
 	/* Find the lower vnode and lock it. */
 	error = pathbuf_copyin(args->la.target, &pb);
 	if (error) {
-		return error;
+		// TODO: temporary fix to call bind-mount from unshare(2)
+		pb = pathbuf_create(args->la.target);
+		if (pb == NULL) {
+			return ENOMEM;
+		}
 	}
 	NDINIT(&nd, LOOKUP, FOLLOW|LOCKLEAF, pb);
 	if ((error = namei(&nd)) != 0) {

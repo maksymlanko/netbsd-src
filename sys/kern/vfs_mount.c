@@ -100,6 +100,8 @@ __KERNEL_RCSID(0, "$NetBSD: vfs_mount.c,v 1.110 2024/12/07 02:27:38 riastradh Ex
 #include <miscfs/specfs/specdev.h>
 
 #include <uvm/uvm_swap.h>
+// TODO: so clone_mnt() can call null_mount(), replace with do_mount()
+#include <miscfs/nullfs/null.h>
 
 enum mountlist_type {
 	ME_MOUNT,
@@ -1628,18 +1630,69 @@ mountlist_table_append(struct vnode *old, struct vnode *mnt_point)
 	TAILQ_INSERT_TAIL(&mountlist_table, mpair, mpair_list);
 }
 
+static struct mount *
+create_null_mount(struct vnode *source, struct vnode *target)
+{
+    struct mount *mp;
+    struct vfsops *null_ops;
+
+    // Get nullfs operations needed to specify mount type
+    null_ops = vfs_getopsbyname("null");
+    if (null_ops == NULL) {
+        printf("Couldn't find nullfs operations!\n");
+        return NULL;
+    }
+
+    // Create mount structure
+    mp = vfs_mountalloc(null_ops, target);
+    if (mp == NULL) {
+		printf("Couldn't alloc vfs_mount!\n");
+		// TODO: why delref?
+        vfs_delref(null_ops);
+        return NULL;
+    }
+
+    // VFS_MOUNT for null_fs requires `target` to be specified like this
+	struct null_args args = { .nulla_target = __UNCONST("/tmp") };
+	size_t size_args = sizeof(args);
+
+    // TODO: change to VFS_MOUNT
+    nullfs_mount(mp, "/home/maksym/mnt_test", &args, &size_args);
+    // TODO: when calling `mount` shows "empty" strings for this listing
+	mountlist_append(mp);
+
+	// makes vnode visible in FS
+    target->v_mountedhere = mp;
+	// save vnode that we are about mount on top of
+	mp->mnt_vnodecovered = target;
+
+    printf("Nullfs bind mount created successfully\n");
+    return mp;
+}
+
+
 // Copy (mount) old into (vnode) mnt_point
 struct mount *
-clone_mnt(struct vnode *old, struct vnode *mnt_point)
+clone_mnt(struct vnode *source, struct vnode *target)
 {
-	printf("CLONING MNT!!!!\n\n\n\n");
-	mountlist_table_append(old, mnt_point);
-	// TODO: is this right?
-	// THIS BREAKS FOR FILES!!!
-	mnt_point->v_mountedhere = old->v_mount;
+	printf("Cloning mnt!\n");
+	// TODO: if file, do bind-mount through namespace
+	// if directory, we can wrap null-mount since it already bind-mounts directories
+
+    struct mount *mp;
+    mp = create_null_mount(source, target);
+
+    if (mp == NULL) {
+		printf("Failed creating null_mount!\n");
+		return NULL;
+	}
+
+	// might need it for bind-mounting files?
+	// target->v_mountedhere = source->v_mount;
 
 	// TODO: make return void
-	return old->v_mount;
+	printf("Finished cloning mnt!\n");
+	return target->v_mount;
 }
 
 static void
