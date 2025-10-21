@@ -927,7 +927,6 @@ lookup_crossmount(struct namei_state *state,
 	struct vnode *searchdir;
 	struct mount *mp;
 	int error, lktype;
-	// struct vnode *nsobj;
 
 	searchdir = *searchdir_ret;
 	foundobj = *foundobj_ret;
@@ -1578,6 +1577,17 @@ namei_oneroot(struct namei_state *state,
 			    &foundobj, &searchdir_locked);
 		}
 
+		if (inside_namespace()) {
+		    printf("inside namespace from namei_oneroot!\n");
+		    struct vnode *nsobj = lookup_namespace(foundobj);
+		    if (nsobj) {
+		        vref(nsobj);
+		        vrele(foundobj);
+		        foundobj = nsobj;
+		        printf("FOUND BIND MOUNTED FILE!!!!\n\n\n");
+		    }
+		}
+
 		/*
 		 * If the vnode we found is mounted on, then cross the mount
 		 * and get the root vnode in foundobj.  If this encounters
@@ -1588,6 +1598,7 @@ namei_oneroot(struct namei_state *state,
 		    foundobj->v_type == VDIR &&
 		    foundobj->v_mountedhere != NULL &&
 		    (cnp->cn_flags & NOCROSSMOUNT) == 0) {
+			printf("calling lookup crossmount! PROBABLY BAD!!! (for file bind-mount\n");
 			error = lookup_crossmount(state, &searchdir,
 			    &foundobj, &searchdir_locked);
 		}

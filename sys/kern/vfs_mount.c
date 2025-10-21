@@ -144,8 +144,9 @@ int in_namespace = 0;
 
 struct mount_pair {
 	TAILQ_ENTRY(mount_pair) mpair_list;	/* Mount list. */
-	struct vnode *ns_mount;
-	struct vnode *real_mount;
+	ino_t fileid;
+	dev_t fsid;
+	// TODO: the mounted vnode
 };
 
 static TAILQ_HEAD(mountlist_table, mount_pair) mountlist_table;
@@ -1596,35 +1597,69 @@ mountlist_alloc(enum mountlist_type type, struct mount *mp)
 }
 
 static struct mount_pair *
-mount_pair_alloc(struct vnode *real_mount, struct vnode *mnt_point)
+mount_pair_alloc(struct vnode *from, struct vnode *on)
 {
 	struct mount_pair *mpair;
+	struct vattr vap;
+	ino_t fileid;
+	dev_t fsid;
+
+	// TODO: remove, this is debug
+	VOP_GETATTR(from, &vap, kauth_cred_get());
+	fileid = vap.va_fileid;
+	fsid = vap.va_fsid;
+	printf("NOT SAVED `real_mount` vnode with attrs: %ld fileid and %lu fsid\n", fileid, fsid);
+
+	// get file id and FS id for vnode we want to mount on
+	// TODO: lock unlock
+	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
+	VOP_GETATTR(on, &vap, kauth_cred_get());
+	fileid = vap.va_fileid;
+	fsid = vap.va_fsid;
+	printf("Saved `mnt_point` vnode with attrs: %ld fileid and %lu fsid\n", fileid, fsid);
 
 	mpair = kmem_zalloc(sizeof(*mpair), KM_SLEEP);
-	mpair->ns_mount = mnt_point;
-	mpair->real_mount = real_mount;
+	mpair->fileid = fileid;
+	mpair->fsid = fsid;
+	// TODO: save vnode of file that the bind-mount was from
 
 	return mpair;
 }
 
 struct vnode *
 lookup_namespace(struct vnode *mountpoint) {
+	printf("Entered lookup_namespace!\n");
 	struct mount_pair *mpair = NULL;
+	struct vattr vap;
+
+	// TODO: lock unlock
+	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
+	VOP_GETATTR(mountpoint, &vap, kauth_cred_get());
+	ino_t fileid = vap.va_fileid;
+	dev_t fsid = vap.va_fsid;
+	printf("Looking for attrs of `mountpoint` vnode: %ld fileid and %lu fsid\n", fileid, fsid);
 
 	// TODO: lock unlock
 	TAILQ_FOREACH(mpair, &mountlist_table, mpair_list) {
-		if (mpair->ns_mount == mountpoint) {
-			return mpair->real_mount;
+		printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->fileid, mpair->fsid);
+		if (mpair->fileid == vap.va_fileid && mpair->fsid == vap.va_fsid) {
+			printf("Found match in lookup!\n");
+			// TODO: return actual vnode
+			return NULL;
 		}
 	}
 	return NULL;
 }
 
 void
-mountlist_table_append(struct vnode *old, struct vnode *mnt_point)
+mountlist_table_append(struct vnode *from, struct vnode *on)
 {
 	struct mount_pair *mpair;
-	mpair = mount_pair_alloc(old, mnt_point);
+	mpair = mount_pair_alloc(from, on);
+	// this is used so vnode's don't disappear between append and lookup
+	// TODO: vrele() on delete
+	vref(from);
+	vref(on);
 
 	// TODO: lock unlock
 	TAILQ_INSERT_TAIL(&mountlist_table, mpair, mpair_list);
@@ -1670,7 +1705,6 @@ create_null_mount(struct vnode *source, struct vnode *target)
     return mp;
 }
 
-
 // Copy (mount) old into (vnode) mnt_point
 struct mount *
 clone_mnt(struct vnode *source, struct vnode *target)
@@ -1678,21 +1712,27 @@ clone_mnt(struct vnode *source, struct vnode *target)
 	printf("Cloning mnt!\n");
 	// TODO: if file, do bind-mount through namespace
 	// if directory, we can wrap null-mount since it already bind-mounts directories
-
-    struct mount *mp;
-    mp = create_null_mount(source, target);
-
-    if (mp == NULL) {
-		printf("Failed creating null_mount!\n");
+	if(source->v_type == VREG) {
+		printf("Cloning file!\n");
+		mountlist_table_append(source, target);
+		// TODO: how do we know if it failed? Should it return?
 		return NULL;
+	} else {
+	    struct mount *mp;
+	    mp = create_null_mount(source, target);
+
+	    if (mp == NULL) {
+			printf("Failed creating null_mount!\n");
+			return NULL;
+		}
+
+		// might need it for bind-mounting files?
+		// target->v_mountedhere = source->v_mount;
+
+		// TODO: make return void
+		printf("Finished cloning mnt!\n");
+		return target->v_mount;		
 	}
-
-	// might need it for bind-mounting files?
-	// target->v_mountedhere = source->v_mount;
-
-	// TODO: make return void
-	printf("Finished cloning mnt!\n");
-	return target->v_mount;
 }
 
 static void

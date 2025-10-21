@@ -56,7 +56,7 @@ int unmount_from_kernel(void);
 struct mount *get_tmp(void);
 struct vnode *get_mnt_test(void);
 struct vnode *get_tmp_vnode(void);
-
+struct vnode *get_vnode_from_path(const char*);
 
 int unmount_from_kernel(void)
 {
@@ -133,6 +133,25 @@ struct vnode *get_mnt_test(void)
     return vp;
 }
 
+struct vnode *get_vnode_from_path(const char* path)
+{
+    struct vnode *vp;
+    int error;
+
+    if (!path){
+        printf("Can't get vnode for empty path!\n");
+        return NULL;
+    }
+
+    error = namei_simple_kernel(path, NSM_FOLLOW_NOEMULROOT, &vp);
+    if (error) {
+        printf("Failed to get vnode for %s: %d\n", path, error);
+        return NULL;
+    }
+
+    return vp;
+}
+
 void
 print_all_mounts(void)
 {
@@ -182,11 +201,28 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         printf("entered namespace\n");
         print_all_mounts();
 
-        printf("cloning /tmp to /home/maksym/mnt_test\n");
-        struct vnode *tmp = get_tmp_vnode();
-        struct vnode *vp = get_mnt_test();
-        clone_mnt(tmp, vp);
-        printf("cloned into /home/maksym/mnt_test!\n");
+        // printf("cloning /tmp to /home/maksym/mnt_test\n");
+        // struct vnode *tmp = get_vnode_from_path("/tmp");
+        // struct vnode *vp = get_vnode_from_path("/home/maksym/clone_mnt");
+        // clone_mnt(tmp, vp);
+        // printf("cloned /tmp into /home/maksym/mnt_test!\n");
+
+        printf("cloning to_bind to original\n");
+        struct vnode *original = get_vnode_from_path("/home/maksym/file-mount-test/original");
+        struct vnode *to_bind = get_vnode_from_path("/home/maksym/file-mount-test/to_bind");
+        struct vnode *dir = get_vnode_from_path("/home/maksym/file-mount-test");
+
+        struct vattr va_orig, va_bind, va_dir;
+        VOP_GETATTR(original, &va_orig, NOCRED);
+        VOP_GETATTR(to_bind, &va_bind, NOCRED);
+        VOP_GETATTR(dir, &va_dir, NOCRED);
+        printf("original vnode: inode %ld\n", va_orig.va_fileid);
+        printf("to_bind vnode: inode %ld\n", va_bind.va_fileid);
+        printf("dir vnode: inode %ld\n", va_dir.va_fileid);
+
+        clone_mnt(to_bind, original);
+        printf("cloned to_bind into original!\n");
+
         print_all_mounts();
 
 
