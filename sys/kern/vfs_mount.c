@@ -144,9 +144,11 @@ int in_namespace = 0;
 
 struct mount_pair {
 	TAILQ_ENTRY(mount_pair) mpair_list;	/* Mount list. */
-	ino_t fileid;
-	dev_t fsid;
-	// TODO: the mounted vnode
+	ino_t source_fileid;
+	dev_t source_fsid;
+	ino_t target_fileid;
+	dev_t target_fsid;
+	struct mount *source_mp; // needed to call VFS_VGET()
 };
 
 static TAILQ_HEAD(mountlist_table, mount_pair) mountlist_table;
@@ -1597,69 +1599,86 @@ mountlist_alloc(enum mountlist_type type, struct mount *mp)
 }
 
 static struct mount_pair *
-mount_pair_alloc(struct vnode *from, struct vnode *on)
+mount_pair_alloc(struct vnode *source, struct vnode *target)
 {
 	struct mount_pair *mpair;
-	struct vattr vap;
-	ino_t fileid;
-	dev_t fsid;
+	struct vattr source_vap, target_vap;
+	ino_t source_fileid, target_fileid;
+	dev_t source_fsid, target_fsid;
 
-	// TODO: remove, this is debug
-	VOP_GETATTR(from, &vap, kauth_cred_get());
-	fileid = vap.va_fileid;
-	fsid = vap.va_fsid;
-	printf("NOT SAVED `real_mount` vnode with attrs: %ld fileid and %lu fsid\n", fileid, fsid);
+	// get file id and FS id for source and target vnodes for file bind-mount
 
-	// get file id and FS id for vnode we want to mount on
 	// TODO: lock unlock
 	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
-	VOP_GETATTR(on, &vap, kauth_cred_get());
-	fileid = vap.va_fileid;
-	fsid = vap.va_fsid;
-	printf("Saved `mnt_point` vnode with attrs: %ld fileid and %lu fsid\n", fileid, fsid);
+	VOP_GETATTR(source, &source_vap, kauth_cred_get());
+	VOP_GETATTR(target, &target_vap, kauth_cred_get());
+
+	source_fileid = source_vap.va_fileid;
+	source_fsid = source_vap.va_fsid;
+	target_fileid = target_vap.va_fileid;
+	target_fsid = target_vap.va_fsid;
+
+	// printf("Saved `source` vnode with attrs: %ld fileid and %lu fsid\n", source_fileid, source_fsid);
+	// printf("Saved `target` vnode with attrs: %ld fileid and %lu fsid\n", target_fileid, target_fsid);
 
 	mpair = kmem_zalloc(sizeof(*mpair), KM_SLEEP);
-	mpair->fileid = fileid;
-	mpair->fsid = fsid;
-	// TODO: save vnode of file that the bind-mount was from
+	mpair->source_fileid = source_fileid;
+	mpair->source_fsid = source_fsid;
+	mpair->target_fileid = target_fileid;
+	mpair->target_fsid = target_fsid;
+	mpair->source_mp = source->v_mount; // needed for VFS_VGET()
+
+	// TODO: move vref() to this function?
 
 	return mpair;
 }
 
 struct vnode *
 lookup_namespace(struct vnode *mountpoint) {
-	printf("Entered lookup_namespace!\n");
+	// printf("Entered lookup_namespace!\n");
 	struct mount_pair *mpair = NULL;
 	struct vattr vap;
+	ino_t mp_fileid;
+	dev_t mp_fsid;
+	int error;
 
 	// TODO: lock unlock
 	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
 	VOP_GETATTR(mountpoint, &vap, kauth_cred_get());
-	ino_t fileid = vap.va_fileid;
-	dev_t fsid = vap.va_fsid;
-	printf("Looking for attrs of `mountpoint` vnode: %ld fileid and %lu fsid\n", fileid, fsid);
+	mp_fileid = vap.va_fileid;
+	mp_fsid = vap.va_fsid;
+	// printf("Looking for attrs of `mountpoint` vnode: %ld fileid and %lu fsid\n", fileid, fsid);
 
 	// TODO: lock unlock
 	TAILQ_FOREACH(mpair, &mountlist_table, mpair_list) {
-		printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->fileid, mpair->fsid);
-		if (mpair->fileid == vap.va_fileid && mpair->fsid == vap.va_fsid) {
-			printf("Found match in lookup!\n");
-			// TODO: return actual vnode
-			return NULL;
+		printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->target_fileid, mpair->target_fsid);
+		if (mpair->target_fileid == mp_fileid && mpair->target_fsid == mp_fsid) {
+		    printf("Found match in lookup!\n");
+
+		    struct vnode *orig_vp;
+		    // TODO: why does it only work with LK_NONE? Is it ok?
+			// error = VFS_VGET(mpair->mp, mpair->source_fileid, LK_EXCLUSIVE, &orig_vp);
+			error = VFS_VGET(mpair->source_mp, mpair->source_fileid, LK_NONE, &orig_vp);
+			if (error) {
+			    printf("vfs_vget failed: %d\n", error);
+			    return NULL;
+			}
+			return orig_vp;
 		}
 	}
+	// printf("RETURNING NULL IN LOOKUP_NAMESPACE!\n");
 	return NULL;
 }
 
 void
-mountlist_table_append(struct vnode *from, struct vnode *on)
+mountlist_table_append(struct vnode *source, struct vnode *target)
 {
 	struct mount_pair *mpair;
-	mpair = mount_pair_alloc(from, on);
+	mpair = mount_pair_alloc(source, target);
 	// this is used so vnode's don't disappear between append and lookup
+	// TODO: why only target? confirm refcnt's are correct
 	// TODO: vrele() on delete
-	vref(from);
-	vref(on);
+	vref(target);
 
 	// TODO: lock unlock
 	TAILQ_INSERT_TAIL(&mountlist_table, mpair, mpair_list);
@@ -1732,6 +1751,7 @@ clone_mnt(struct vnode *source, struct vnode *target)
 		// TODO: make return void
 		printf("Finished cloning mnt!\n");
 		return target->v_mount;		
+		// TODO: should we use vfs_getnewfsid() somewhere?
 	}
 }
 

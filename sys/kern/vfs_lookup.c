@@ -1179,6 +1179,17 @@ unionlookup:
 	}
 	error = VOP_LOOKUP(searchdir, &foundobj, cnp);
 
+	// TODO: is this the best place? Together with inside lookup_fastforward
+	// TODO:  && cnp->cn_flags & ISLASTCN ? count if reduces number of times
+	if (error == 0 && foundobj != NULL && inside_namespace()) {
+		// TODO: optimize? count number of times this is called
+	    struct vnode *nsobj = lookup_namespace(foundobj);
+	    if (nsobj) {
+	        // printf("Redirecting in lookup_once!\n");
+	        foundobj = nsobj;
+	    }
+	}
+
 	if (error != 0) {
 		KASSERTMSG((foundobj == NULL),
 		    "leaf `%s' should be empty but is %p",
@@ -1357,6 +1368,18 @@ lookup_fastforward(struct namei_state *state, struct vnode **searchdir_ret,
 			cnp->cn_namelen, &foundobj, &plock, cnp->cn_cred)) {
 			error = SET_ERROR(EOPNOTSUPP);
 			break;
+		} else {
+			// TODO: is this the best place? Together with inside lookup_fastforward
+			// TODO: add ' && cnp->cn_flags & ISLASTCN' ?
+		    if (error == 0 && foundobj != NULL && inside_namespace()) {
+		        // printf("Redirecting in lookup_fastforward!\n");
+		        struct vnode *nsobj = lookup_namespace(foundobj);
+		        if (nsobj) {
+                    // TODO: should we release?
+		            vrele(foundobj);
+		            foundobj = nsobj;
+		        }
+		    }
 		}
 		KASSERT(plock != NULL);
 		KASSERT(rw_lock_held(plock));
@@ -1560,6 +1583,9 @@ namei_oneroot(struct namei_state *state,
 		KASSERT(searchdir != NULL);
 		KASSERT(!searchdir_locked);
 
+		// TODO: can we move lookup_namespace here instead of inside
+		// both 2 following funcs?
+
 		/*
 		 * Parse out the first path name component that we need to
 		 * to consider.  While doing this, attempt to use the name
@@ -1575,17 +1601,6 @@ namei_oneroot(struct namei_state *state,
 		if (error == EOPNOTSUPP) {
 			error = lookup_once(state, searchdir, &searchdir,
 			    &foundobj, &searchdir_locked);
-		}
-
-		if (inside_namespace()) {
-		    printf("inside namespace from namei_oneroot!\n");
-		    struct vnode *nsobj = lookup_namespace(foundobj);
-		    if (nsobj) {
-		        vref(nsobj);
-		        vrele(foundobj);
-		        foundobj = nsobj;
-		        printf("FOUND BIND MOUNTED FILE!!!!\n\n\n");
-		    }
 		}
 
 		/*
