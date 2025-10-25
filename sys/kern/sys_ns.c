@@ -196,10 +196,10 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
 
     if (flags & CLONE_NEWNS) {
         printf("inside CLONE_NEWNS unshare!!\n");
-        print_all_mounts();
+        // print_all_mounts();
         enter_mount_ns();
         printf("entered namespace\n");
-        print_all_mounts();
+        // print_all_mounts();
 
         // printf("cloning /tmp to /home/maksym/mnt_test\n");
         // struct vnode *tmp = get_vnode_from_path("/tmp");
@@ -207,21 +207,21 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         // clone_mnt(tmp, vp);
         // printf("cloned /tmp into /home/maksym/mnt_test!\n");
 
-        printf("cloning to_bind to original\n");
-        struct vnode *original = get_vnode_from_path("/home/maksym/file-mount-test/original");
-        struct vnode *to_bind = get_vnode_from_path("/home/maksym/file-mount-test/to_bind");
+        printf("cloning source to target \n");
+        struct vnode *source = get_vnode_from_path("/home/maksym/file-mount-test/source");
+        struct vnode *target = get_vnode_from_path("/home/maksym/file-mount-test/target");
         struct vnode *dir = get_vnode_from_path("/home/maksym/file-mount-test");
 
-        struct vattr va_orig, va_bind, va_dir;
-        VOP_GETATTR(original, &va_orig, NOCRED);
-        VOP_GETATTR(to_bind, &va_bind, NOCRED);
+        struct vattr va_source, va_target, va_dir;
+        VOP_GETATTR(source, &va_source, NOCRED);
+        VOP_GETATTR(target, &va_target, NOCRED);
         VOP_GETATTR(dir, &va_dir, NOCRED);
-        printf("original vnode: inode %ld\n", va_orig.va_fileid);
-        printf("to_bind vnode: inode %ld\n", va_bind.va_fileid);
+        printf("source vnode: inode %ld\n", va_source.va_fileid);
+        printf("target vnode: inode %ld\n", va_target.va_fileid);
         printf("dir vnode: inode %ld\n", va_dir.va_fileid);
 
-        clone_mnt(to_bind, original);
-        printf("cloned to_bind into original!\n");
+        clone_mnt(source, target);
+        printf("cloned source into target!\n");
 
         print_all_mounts();
 
