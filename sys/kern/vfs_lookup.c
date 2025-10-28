@@ -1376,7 +1376,6 @@ lookup_fastforward(struct namei_state *state, struct vnode **searchdir_ret,
 		        struct vnode *nsobj = lookup_namespace(foundobj);
 		        if (nsobj) {
                     // TODO: should we release?
-		            vrele(foundobj);
 		            foundobj = nsobj;
 		        }
 		    }
