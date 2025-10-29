@@ -5,16 +5,14 @@
 #include <sys/malloc.h>
 #include <sys/kmem.h>
 
-// #if defined(_KERNEL_OPT)
-// #include "opt_ns.h"
-// #include "opt_ns_uts.h"
-// #endif
+#if defined(_KERNEL_OPT)
+#include "opt_ns.h"
+#include "opt_ns_mnt.h"
+#endif
 
-// TODO: FIX!!!
-// #if defined(NAMESPACES) && defined(NS_UTS)
-// #include <secmodel/mnt/mnt.h>
-// #endif
+#if defined(NAMESPACES) && defined(NS_MNT)
 #include <secmodel/mnt/mnt.h>
+#endif
 
 MODULE(MODULE_CLASS_SECMODEL, secmodel_mnt, NULL);
 
