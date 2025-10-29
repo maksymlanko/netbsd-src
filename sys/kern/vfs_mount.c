@@ -1651,7 +1651,7 @@ lookup_namespace(struct vnode *mountpoint) {
 
 	// TODO: lock unlock
 	TAILQ_FOREACH(mpair, &mountlist_table, mpair_list) {
-		printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->target_fileid, mpair->target_fsid);
+		// printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->target_fileid, mpair->target_fsid);
 		if (mpair->target_fileid == mp_fileid && mpair->target_fsid == mp_fsid) {
 		    printf("Found match in lookup!\n");
 
@@ -1726,7 +1726,7 @@ create_null_mount(struct vnode *source, struct vnode *target)
 
 // Copy (mount) old into (vnode) mnt_point
 struct mount *
-clone_mnt(struct vnode *source, struct vnode *target)
+clone_mount(struct vnode *source, struct vnode *target)
 {
 	printf("Cloning mnt!\n");
 	// TODO: if file, do bind-mount through namespace

@@ -433,7 +433,7 @@ struct vnode *vfs_vnode_iterator_next(struct vnode_iterator *,
 struct mountlist * get_mount(void);
 void enter_mount_ns(void);
 void leave_mount_ns(void);
-struct mount *clone_mnt(struct vnode *old, struct vnode *mnt_point);
+struct mount *clone_mount(struct vnode *old, struct vnode *mnt_point);
 int inside_namespace(void);
 struct vnode *lookup_namespace(struct vnode *mountpoint);
 

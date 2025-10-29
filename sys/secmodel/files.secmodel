@@ -33,6 +33,11 @@ include "secmodel/overlay/files.overlay"
 include "secmodel/keylock/files.keylock"
 
 #
-# NS information stored in credentials of secmodel
+# UTS_NS information stored in credentials of secmodel
 #
 include "secmodel/uts/files.uts"
+
+#
+# MNT_NS information stored in credentials of secmodel
+#
+include "secmodel/mnt/files.mnt"

@@ -220,7 +220,7 @@ sys_unshare(struct lwp *l, const struct sys_unshare_args *uap,
         printf("target vnode: inode %ld\n", va_target.va_fileid);
         printf("dir vnode: inode %ld\n", va_dir.va_fileid);
 
-        clone_mnt(source, target);
+        clone_mount(source, target);
         printf("cloned source into target!\n");
 
         print_all_mounts();
