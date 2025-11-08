@@ -100,6 +100,8 @@ __KERNEL_RCSID(0, "$NetBSD: vfs_mount.c,v 1.110 2024/12/07 02:27:38 riastradh Ex
 #include <miscfs/specfs/specdev.h>
 
 #include <uvm/uvm_swap.h>
+// TODO: so clone_mnt() can call null_mount(), replace with do_mount()
+#include <miscfs/nullfs/null.h>
 
 enum mountlist_type {
 	ME_MOUNT,
@@ -135,6 +137,26 @@ static kmutex_t			mntid_lock;
 static kmutex_t			mountgen_lock __cacheline_aligned;
 static uint64_t			mountgen;
 
+/* mount namespace testing stuff */
+// static TAILQ_HEAD(mountlist, mountlist_entry) ns_mountlist;
+static struct mountlist ns_mountlist;  // Same type as mountlist
+int in_namespace = 0;
+
+struct mount_pair {
+	TAILQ_ENTRY(mount_pair) mpair_list;	/* Mount list. */
+	ino_t source_fileid;
+	dev_t source_fsid;
+	ino_t target_fileid;
+	dev_t target_fsid;
+	struct mount *source_mp; // needed to call VFS_VGET()
+};
+
+static TAILQ_HEAD(mountlist_table, mount_pair) mountlist_table;
+
+struct mountlist * get_mount(void);
+void enter_mount_ns(void);
+void mountlist_table_append(struct vnode *, struct vnode *);
+
 void
 vfs_mount_sysinit(void)
 {
@@ -165,6 +187,7 @@ vfs_mountalloc(struct vfsops *vfsops, vnode_t *vp)
 	mp->mnt_vnodecovered = vp;
 	mount_initspecific(mp);
 
+    // Allocate mount state. what?
 	error = fstrans_mount(mp);
 	KASSERT(error == 0);
 
@@ -943,6 +966,13 @@ dounmount(struct mount *mp, int flags, struct lwp *l)
 	int error, async, used_syncer, used_extattr;
 	const bool was_suspended = fstrans_is_owner(mp);
 
+    if (in_namespace) {
+        // namespaces can't unmount, but can hide from itself
+        // TODO: do this by checking mnt_refcnt
+        mountlist_remove(mp);
+        return 0;
+    }
+
 #if NVERIEXEC > 0
 	error = veriexec_unmountchk(mp);
 	if (error)
@@ -1568,21 +1598,252 @@ mountlist_alloc(enum mountlist_type type, struct mount *mp)
 	return me;
 }
 
+static struct mount_pair *
+mount_pair_alloc(struct vnode *source, struct vnode *target)
+{
+	struct mount_pair *mpair;
+	struct vattr source_vap, target_vap;
+	ino_t source_fileid, target_fileid;
+	dev_t source_fsid, target_fsid;
+
+	// get file id and FS id for source and target vnodes for file bind-mount
+
+	// TODO: lock unlock
+	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
+	VOP_GETATTR(source, &source_vap, kauth_cred_get());
+	VOP_GETATTR(target, &target_vap, kauth_cred_get());
+
+	source_fileid = source_vap.va_fileid;
+	source_fsid = source_vap.va_fsid;
+	target_fileid = target_vap.va_fileid;
+	target_fsid = target_vap.va_fsid;
+
+	// printf("Saved `source` vnode with attrs: %ld fileid and %lu fsid\n", source_fileid, source_fsid);
+	// printf("Saved `target` vnode with attrs: %ld fileid and %lu fsid\n", target_fileid, target_fsid);
+
+	mpair = kmem_zalloc(sizeof(*mpair), KM_SLEEP);
+	mpair->source_fileid = source_fileid;
+	mpair->source_fsid = source_fsid;
+	mpair->target_fileid = target_fileid;
+	mpair->target_fsid = target_fsid;
+	mpair->source_mp = source->v_mount; // needed for VFS_VGET()
+
+	// TODO: move vref() to this function?
+
+	return mpair;
+}
+
+struct vnode *
+lookup_namespace(struct vnode *mountpoint) {
+	// printf("Entered lookup_namespace!\n");
+	struct mount_pair *mpair = NULL;
+	struct vattr vap;
+	ino_t mp_fileid;
+	dev_t mp_fsid;
+	int error;
+
+	// TODO: lock unlock
+	// TODO: should it be kauth_cred_get()? Or the calling process's cred..?
+	VOP_GETATTR(mountpoint, &vap, kauth_cred_get());
+	mp_fileid = vap.va_fileid;
+	mp_fsid = vap.va_fsid;
+	// printf("Looking for attrs of `mountpoint` vnode: %ld fileid and %lu fsid\n", fileid, fsid);
+
+	// TODO: lock unlock
+	TAILQ_FOREACH(mpair, &mountlist_table, mpair_list) {
+		// printf("Looking for %ld %lu and found %ld %lu\n", vap.va_fileid, vap.va_fsid, mpair->target_fileid, mpair->target_fsid);
+		if (mpair->target_fileid == mp_fileid && mpair->target_fsid == mp_fsid) {
+		    printf("Found match in lookup!\n");
+
+		    struct vnode *orig_vp;
+		    // TODO: why does it only work with LK_NONE? Is it ok?
+			// error = VFS_VGET(mpair->mp, mpair->source_fileid, LK_EXCLUSIVE, &orig_vp);
+			error = VFS_VGET(mpair->source_mp, mpair->source_fileid, LK_NONE, &orig_vp);
+			if (error) {
+			    printf("vfs_vget failed: %d\n", error);
+			    return NULL;
+			}
+			return orig_vp;
+		}
+	}
+	// printf("RETURNING NULL IN LOOKUP_NAMESPACE!\n");
+	return NULL;
+}
+
+void
+mountlist_table_append(struct vnode *source, struct vnode *target)
+{
+	struct mount_pair *mpair;
+	mpair = mount_pair_alloc(source, target);
+	// this is used so vnode's don't disappear between append and lookup
+	// TODO: why only target? confirm refcnt's are correct
+	// TODO: vrele() on delete
+	vref(target);
+
+	// TODO: lock unlock
+	TAILQ_INSERT_TAIL(&mountlist_table, mpair, mpair_list);
+}
+
+static struct mount *
+create_null_mount(struct vnode *source, struct vnode *target)
+{
+    struct mount *mp;
+    struct vfsops *null_ops;
+
+    // Get nullfs operations needed to specify mount type
+    null_ops = vfs_getopsbyname("null");
+    if (null_ops == NULL) {
+        printf("Couldn't find nullfs operations!\n");
+        return NULL;
+    }
+
+    // Create mount structure
+    mp = vfs_mountalloc(null_ops, target);
+    if (mp == NULL) {
+		printf("Couldn't alloc vfs_mount!\n");
+		// TODO: why delref?
+        vfs_delref(null_ops);
+        return NULL;
+    }
+
+    // VFS_MOUNT for null_fs requires `target` to be specified like this
+	struct null_args args = { .nulla_target = __UNCONST("/tmp") };
+	size_t size_args = sizeof(args);
+
+    // TODO: change to VFS_MOUNT
+    nullfs_mount(mp, "/home/maksym/mnt_test", &args, &size_args);
+    // TODO: when calling `mount` shows "empty" strings for this listing
+	mountlist_append(mp);
+
+	// makes vnode visible in FS
+    target->v_mountedhere = mp;
+	// save vnode that we are about mount on top of
+	mp->mnt_vnodecovered = target;
+
+    printf("Nullfs bind mount created successfully\n");
+    return mp;
+}
+
+// Copy (mount) old into (vnode) mnt_point
+struct mount *
+clone_mount(struct vnode *source, struct vnode *target)
+{
+	printf("Cloning mnt!\n");
+	// TODO: if file, do bind-mount through namespace
+	// if directory, we can wrap null-mount since it already bind-mounts directories
+	if(source->v_type == VREG) {
+		printf("Cloning file!\n");
+		mountlist_table_append(source, target);
+		// TODO: how do we know if it failed? Should it return?
+		return NULL;
+	} else {
+	    struct mount *mp;
+	    mp = create_null_mount(source, target);
+
+	    if (mp == NULL) {
+			printf("Failed creating null_mount!\n");
+			return NULL;
+		}
+
+		// might need it for bind-mounting files?
+		// target->v_mountedhere = source->v_mount;
+
+		// TODO: make return void
+		printf("Finished cloning mnt!\n");
+		return target->v_mount;		
+		// TODO: should we use vfs_getnewfsid() somewhere?
+	}
+}
+
 static void
 mountlist_free(struct mountlist_entry *me)
 {
-
 	kmem_free(me, sizeof(*me));
+}
+
+// // Copy (mount) old into (vnode) mnt_point
+// struct mount *
+// clone_mnt(struct mount *old, struct vnode *mnt_point)
+// {
+// 	struct mount *new;
+
+// 	new = vfs_mountalloc(old->mnt_op, mnt_point);
+
+// 	new->mnt_flag = old->mnt_flag;
+// 	// TODO: what is internal flags?
+// 	// new->mnt_iflag = old->mnt_iflag;
+// 	new->mnt_fs_bshift = old->mnt_fs_bshift;
+// 	new->mnt_dev_bshift = old->mnt_dev_bshift;
+
+// 	// TODO: we probably don't want to mess with 'mnt_lower', or maybe later
+//     // TODO: what to do with logging ops 'wapbl_ops' and log info 'mnt_wapbl'?
+//     // TODO: what is 'mnt_synclist_slot'?
+//     // TODO: should we add 'mnt_stat' here? from outside..?
+
+// 	// TODO: find EXACTLY what is used here
+// 	// TODO: probably should inc refcount on device..?
+// 	// TODO: try to make wrapper that really/fake calls VFS_UMOUNT on mnt_data
+// 	new->mnt_data = old->mnt_data;
+
+// 	// this is what makes the vnode findable in the FS, but it crashes on tmpfs_init_vnode:
+// 	// KASSERT(node->tn_vnode == NULL);
+
+// 	// TODO: check all struct vnode fields
+// 	// TODO: try to fix vcache_get()
+// 	// TODO: understand vcache
+
+// 	// make it visible by changing vnode to know it's mounted there
+// 	// mnt_point->v_mountedhere = new;
+// 	return new;
+// }
+
+void enter_mount_ns(void)
+{
+	TAILQ_INIT(&ns_mountlist);
+	TAILQ_INIT(&mountlist_table);
+
+    mount_iterator_t *iter;
+    struct mount *mp;
+
+    mountlist_iterator_init(&iter);
+    while ((mp = mountlist_iterator_next(iter)) != NULL) {
+        struct mountlist_entry *new_entry = mountlist_alloc(ME_MOUNT, mp);
+        TAILQ_INSERT_TAIL(&ns_mountlist, new_entry, me_list);
+    }
+    mountlist_iterator_destroy(iter);
+
+	in_namespace = 1;
+	printf("init ns_mountlist!\n");
+}
+
+void leave_mount_ns(void)
+{
+	in_namespace = 0;
+}
+
+struct mountlist *get_mount(void)
+{
+	if (in_namespace)
+		return &ns_mountlist;
+	return &mountlist;
+}
+
+int inside_namespace(void)
+{
+	if (in_namespace)
+		return 1;
+	return 0;
 }
 
 void
 mountlist_iterator_init(mount_iterator_t **mip)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	me = mountlist_alloc(ME_MARKER, NULL);
 	mutex_enter(&mountlist_lock);
-	TAILQ_INSERT_HEAD(&mountlist, me, me_list);
+	TAILQ_INSERT_HEAD(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 	*mip = (mount_iterator_t *)me;
 }
@@ -1591,12 +1852,13 @@ void
 mountlist_iterator_destroy(mount_iterator_t *mi)
 {
 	struct mountlist_entry *marker = &mi->mi_entry;
+	struct mountlist *current_mountlist = get_mount();
 
 	if (marker->me_mount != NULL)
 		vfs_unbusy(marker->me_mount);
 
 	mutex_enter(&mountlist_lock);
-	TAILQ_REMOVE(&mountlist, marker, me_list);
+	TAILQ_REMOVE(current_mountlist, marker, me_list);
 	mutex_exit(&mountlist_lock);
 
 	mountlist_free(marker);
@@ -1613,6 +1875,7 @@ _mountlist_iterator_next(mount_iterator_t *mi, bool wait)
 	struct mountlist_entry *me, *marker = &mi->mi_entry;
 	struct mount *mp;
 	int error;
+	struct mountlist *current_mountlist = get_mount();
 
 	if (marker->me_mount != NULL) {
 		vfs_unbusy(marker->me_mount);
@@ -1629,8 +1892,8 @@ _mountlist_iterator_next(mount_iterator_t *mi, bool wait)
 			mutex_exit(&mountlist_lock);
 			return NULL;
 		}
-		TAILQ_REMOVE(&mountlist, marker, me_list);
-		TAILQ_INSERT_AFTER(&mountlist, me, marker, me_list);
+		TAILQ_REMOVE(current_mountlist, marker, me_list);
+		TAILQ_INSERT_AFTER(current_mountlist, me, marker, me_list);
 
 		/* Skip other markers. */
 		if (me->me_type != ME_MOUNT)
@@ -1678,10 +1941,11 @@ void
 mountlist_append(struct mount *mp)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	me = mountlist_alloc(ME_MOUNT, mp);
 	mutex_enter(&mountlist_lock);
-	TAILQ_INSERT_TAIL(&mountlist, me, me_list);
+	TAILQ_INSERT_TAIL(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 }
 
@@ -1692,13 +1956,14 @@ void
 mountlist_remove(struct mount *mp)
 {
 	struct mountlist_entry *me;
+	struct mountlist *current_mountlist = get_mount();
 
 	mutex_enter(&mountlist_lock);
-	TAILQ_FOREACH(me, &mountlist, me_list)
+	TAILQ_FOREACH(me, current_mountlist, me_list)
 		if (me->me_type == ME_MOUNT && me->me_mount == mp)
 			break;
 	KASSERT(me != NULL);
-	TAILQ_REMOVE(&mountlist, me, me_list);
+	TAILQ_REMOVE(current_mountlist, me, me_list);
 	mutex_exit(&mountlist_lock);
 	mountlist_free(me);
 }

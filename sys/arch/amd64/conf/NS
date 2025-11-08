@@ -8,3 +8,4 @@ include	"arch/amd64/conf/GENERIC"
 
 options 	NAMESPACES	# Linux compatible namespaces
 options 	NS_UTS 		# UTS namespaces
+options 	NS_MNT 		# MNT namespaces

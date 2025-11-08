@@ -43,7 +43,8 @@ defflag opt_pool.h		POOL_NOCACHE
 defflag				FAULT
 
 defflag opt_ns.h		NAMESPACES
-defflag opt_ns.h		NS_UTS
+defflag opt_ns_uts.h		NS_UTS
+defflag opt_ns_mnt.h		NS_MNT
 
 defparam opt_copy_symtab.h	makeoptions_COPY_SYMTAB
 
